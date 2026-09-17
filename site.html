@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <title>Hosted site</title>
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; font: 18px/1.5 ui-sans-serif, system-ui; background:radial-gradient(1200px 600px at 20% -10%, #16343c, #041016); color:var(--fg); }
+    main { max-width: 640px; margin: 0 auto; padding: 64px 24px; }
+    .k { font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+    h1 { font-family: Georgia, serif; font-weight:400; font-size: clamp(2rem, 6vw, 3.2rem); letter-spacing:-.04em; margin: 10px 0; }
+    p { color:var(--muted); }
+    img { max-width: 96px; border-radius: 16px; }
+    a { color:#cfe4dc; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="k" id="host">Hosted on OFS Domains</div>
+    <h1 id="title">Site</h1>
+    <p id="desc"></p>
+    <p class="k" id="meta"></p>
+    <p><a href="host.html">Manage host</a> · <a href="name.html">Name only</a> · <a href="rights.html">Publisher rights</a></p>
+    <p class="k">No remix or copy of this project without the publisher’s consent.</p>
+  </main>
+  <script src="./host.js"></script>
+  <script>
+    const n = new URLSearchParams(location.search).get("n") || "kelpchart.com";
+    const out = OFSHost.ensure({ fqdn: n, businessName: n, description: "Live on OFS Host.", plan: "claim", listing: "both" });
+    const site = out.site;
+    document.title = site.businessName + " · " + site.fqdn;
+    document.getElementById("host").textContent = site.fqdn + " · hosted here · TLS";
+    document.getElementById("title").textContent = site.businessName;
+    document.getElementById("desc").textContent = site.description || "";
+    document.getElementById("meta").textContent = (site.plan || "claim") + " · listing " + (site.listing || "both");
+  </script>
+</body>
+</html>

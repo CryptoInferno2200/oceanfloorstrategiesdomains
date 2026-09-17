@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <title>OFS Domains — Name only</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.5 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    header, main { max-width: 560px; margin: 0 auto; padding: 24px 20px; }
+    nav { display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 0; }
+    nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
+    nav a.on { color:var(--fg); background:var(--card); }
+    h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.03em; }
+    .k, .lead { color:var(--muted); }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
+    .card { margin-top:16px; padding:18px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
+    label { display:block; font-size:12px; color:var(--muted); margin: 0 0 6px; }
+    input { width:100%; height:48px; border:0; border-radius:12px; padding:0 14px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
+    button { width:100%; height:48px; margin-top:16px; border:0; border-radius:12px; background:var(--fg); color:var(--bg); font-weight:600; cursor:pointer; font: inherit; }
+    ul { margin:10px 0 0; padding-left:18px; color:var(--muted); font-size:14px; }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="k">Already have a site</div>
+    <h1>Buy the name only.</h1>
+    <p class="lead">Skip builder and launch kit. $10 a year for .com / .org. Both listings $0. The name still parks on OFS Host so it can go live. Point DNS at your existing site when you want.</p>
+    <nav>
+      <a href="home.html">Home</a>
+      <a href="auto.html">Auto</a>
+      <a href="bundle.html">Products</a>
+      <a class="on" href="name.html">Name only</a>
+      <a href="checkout.html">Checkout</a>
+    </nav>
+  </header>
+  <main>
+    <form class="card" id="form">
+      <label for="fqdn">Domain name</label>
+      <input id="fqdn" required placeholder="yourbrand.com" value="yourbrand.com" autocomplete="off" />
+      <ul>
+        <li>Claim · $10 / year</li>
+        <li>No AI builder or launch kit</li>
+        <li>Parked on OFS Host so the name is live</li>
+        <li>Domain Privacy Protection · $0</li>
+        <li>Web + Web3 listings included</li>
+        <li>You keep the website you already have</li>
+      </ul>
+      <button type="submit">Buy name · $10</button>
+    </form>
+  </main>
+  <script src="./auth.js"></script>
+  <script src="./pricing.js"></script>
+  <script src="./host.js"></script>
+  <script src="./purchases.js"></script>
+  <script>
+    document.getElementById("form").onsubmit = (e) => {
+      e.preventDefault();
+      const fqdn = document.getElementById("fqdn").value.trim().toLowerCase();
+      const free = typeof OFSSeat !== "undefined" && (function () {
+        const s = OFSSeat.load();
+        return Boolean(s.session && OFSSeat.free(s, s.session));
+      })();
+      const quote = OFSPrice.quote({ bundle: "claim", fqdn, listing: "both", complimentary: free });
+      if (window.OFSPurchases) {
+        OFSPurchases.add({ fqdn: quote.parsed.fqdn, plan: "claim", listing: "both", due: free ? 0 : quote.due, complimentary: free });
+      }
+      OFSHost.publish({
+        fqdn: quote.parsed.fqdn,
+        businessName: quote.parsed.fqdn,
+        description: "Name-only. Point this name at the site you already run, or use the OFS host page.",
+        plan: "claim",
+        listing: "both",
+      });
+      const hosted = OFSHost.path(quote.parsed.fqdn);
+      const stripe = OFSPrice.STRIPE.claim;
+      if (free || quote.due === 0) {
+        location.href = "live.html?fqdn=" + encodeURIComponent(quote.parsed.fqdn) + "&listing=both&bundle=claim&due=0&complimentary=1&only=name";
+        return;
+      }
+      sessionStorage.setItem("ofs.domains.next.host", hosted);
+      if (stripe) { location.href = stripe; return; }
+      location.href = "checkout.html?bundle=claim&listing=both&only=name&fqdn=" + encodeURIComponent(quote.parsed.fqdn);
+    };
+  </script>
+  <script src="./mail.js"></script>
+  <script src="./support.js"></script>
+  <script src="./reef-bg.js"></script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OFS Domains — Zip drop</title>
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font:16px/1.5 ui-sans-serif,system-ui; background:var(--bg); color:var(--fg); }
+    header, main { max-width:720px; margin:0 auto; padding:24px 20px; }
+    nav { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 0; }
+    nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
+    nav a.on { color:var(--fg); background:var(--card); }
+    h1 { font-family:Georgia,serif; font-weight:400; letter-spacing:-.03em; }
+    .k, .lead, label { color:var(--muted); }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
+    .card { margin-top:16px; padding:18px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
+    .drop { min-height:180px; display:flex; align-items:center; justify-content:center; text-align:center; border-radius:16px; box-shadow:inset 0 0 0 1px var(--line); cursor:pointer; }
+    .drop.on { box-shadow:inset 0 0 0 2px #cfe4dc; }
+    input[type=file] { display:none; }
+    input[type=text] { width:100%; height:44px; border:0; border-radius:12px; padding:0 12px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font:inherit; }
+    button, .btn { height:48px; border:0; border-radius:12px; padding:0 18px; background:var(--fg); color:var(--bg); font-weight:600; cursor:pointer; font:inherit; }
+    ul { margin:8px 0 0; padding-left:18px; color:var(--muted); max-height:220px; overflow:auto; }
+    .err { color:#e0b7b0; }
+    iframe { width:100%; min-height:280px; border:0; border-radius:12px; background:#07161c; margin-top:12px; }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="k">No copy paste</div>
+    <h1>Drop a zip. We start the project.</h1>
+    <p class="lead">AI unpacks the archive, finds the start file, parks it on OFS Host, and opens a preview. You do not paste code.</p>
+    <nav>
+      <a href="home.html">Home</a>
+      <a href="auto.html">Auto</a>
+      <a class="on" href="drop.html">Zip drop</a>
+      <a href="host.html">Host</a>
+      <a href="vault.html">Vault</a>
+    </nav>
+  </header>
+  <main>
+    <label class="drop card" id="zone" for="file">Drop a .zip here or tap to choose</label>
+    <input id="file" type="file" accept=".zip,application/zip" />
+    <p class="err" id="err"></p>
+    <p class="lead" id="ok"></p>
+    <div class="card" id="meta" hidden>
+      <div class="k">Unpacked</div>
+      <p id="sum"></p>
+      <label for="fqdn">Name to host</label>
+      <input id="fqdn" placeholder="yourbrand.com" />
+      <button type="button" id="go" style="margin-top:12px;width:100%">Start project</button>
+      <ul id="tree"></ul>
+    </div>
+    <div class="card" id="live" hidden>
+      <div class="k">Running</div>
+      <p id="run"></p>
+      <iframe id="frame" title="Project preview"></iframe>
+      <p><a id="toHost" href="host.html">Open host</a></p>
+    </div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="./host.js"></script>
+  <script src="./purchases.js"></script>
+  <script src="./zip.js"></script>
+  <script>
+    const zone = document.getElementById("zone");
+    const file = document.getElementById("file");
+    let pack = null;
+    function showErr(t) { document.getElementById("err").textContent = t || ""; }
+    async function eat(f) {
+      showErr("");
+      document.getElementById("ok").textContent = "Unpacking " + f.name + "…";
+      try {
+        pack = await OFSZip.unpack(f);
+      } catch (err) {
+        showErr(String(err.message || err));
+        document.getElementById("ok").textContent = "";
+        return;
+      }
+      document.getElementById("ok").textContent = "Ready. " + pack.count + " files.";
+      document.getElementById("meta").hidden = false;
+      document.getElementById("sum").textContent = pack.name + " · " + pack.kind + " · start " + (pack.start || "unknown");
+      document.getElementById("fqdn").value = pack.name.toLowerCase().replace(/[^a-z0-9]+/g, "") + ".com";
+      document.getElementById("tree").innerHTML = pack.files.slice(0, 40).map((x) => "<li>" + x.path + "</li>").join("");
+    }
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("on"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("on"));
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zone.classList.remove("on");
+      const f = e.dataTransfer.files[0];
+      if (f) eat(f);
+    });
+    file.addEventListener("change", () => { if (file.files[0]) eat(file.files[0]); });
+    document.getElementById("go").addEventListener("click", async () => {
+      if (!pack) return;
+      showErr("");
+      try {
+        const project = await OFSZip.start(pack, document.getElementById("fqdn").value);
+        document.getElementById("live").hidden = false;
+        document.getElementById("run").textContent = project.name + " is on Host. Preview is the start file.";
+        const href = OFSZip.preview(project);
+        if (href) document.getElementById("frame").src = href;
+        if (window.OFSHost) document.getElementById("toHost").href = OFSHost.path(project.id.includes(".") ? project.id : document.getElementById("fqdn").value);
+      } catch (err) {
+        showErr(String(err.message || err));
+      }
+    });
+  </script>
+  <script src="./mail.js"></script>
+  <script src="./support.js"></script>
+  <script src="./reef-bg.js"></script>
+</body>
+</html>

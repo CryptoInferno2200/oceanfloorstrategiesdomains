@@ -1,0 +1,20 @@
+OFS Domains — Cloudflare Pages
+
+1. Log in at dash.cloudflare.com
+2. Workers & Pages → Create → Pages → Upload assets
+3. Project name: ofs-domains
+4. Upload the contents of this folder (not the parent zip)
+5. Production URL: https://ofs-domains.pages.dev
+6. Custom domains → Add → your claimed name
+7. Cloudflare will ask to add an ALIAS/CNAME or switch nameservers
+   Apex: ALIAS or CNAME flatten to ofs-domains.pages.dev
+   www:  CNAME ofs-domains.pages.dev
+8. SSL is automatic (Universal SSL). Wait until Active.
+9. Uncheck "Previews" public if you do not want preview URLs indexed.
+
+No build command. No output directory change. This folder is the site.
+
+CLI:
+  npx wrangler pages deploy . --project-name=ofs-domains
+
+Do not deploy this folder back to grok.me if OFS is the official publisher.

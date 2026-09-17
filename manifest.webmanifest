@@ -1,0 +1,14 @@
+{
+  "name": "OFS Domains",
+  "short_name": "OFS Domains",
+  "description": "Claim a real name. Generate the site. Go live. Web and Web3 included.",
+  "start_url": "./home.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#041016",
+  "theme_color": "#041016",
+  "lang": "en",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

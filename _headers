@@ -1,0 +1,16 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Frame-Options: SAMEORIGIN
+  Cache-Control: public, max-age=300
+
+/home.html
+  Cache-Control: public, max-age=60
+
+/*.js
+  Cache-Control: public, max-age=3600
+
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate

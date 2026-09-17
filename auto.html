@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <title>OFS Domains — AI run</title>
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.5 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    header, main { max-width: 720px; margin: 0 auto; padding: 24px 20px; }
+    nav { display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 0; }
+    nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
+    nav a.on { color:var(--fg); background:var(--card); }
+    h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.03em; }
+    .k, .lead { color:var(--muted); }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
+    label { display:block; font-size:12px; color:var(--muted); margin: 12px 0 6px; }
+    input, textarea { width:100%; border:0; border-radius:12px; padding:12px 14px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
+    textarea { min-height: 72px; }
+    button { width:100%; height:48px; border:0; border-radius:12px; margin-top:16px; background:var(--fg); color:var(--bg); font-weight:600; cursor:pointer; font: inherit; }
+    .card { margin-top:16px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
+    ol { margin:8px 0 0; padding-left:20px; color:var(--muted); }
+    ol li.done { color:var(--fg); }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="k">AI Automation</div>
+    <h1>The platform runs itself.</h1>
+    <p class="lead">Type the brief. The agent picks the name, the product, the listing, the profile, and either pays or goes live.</p>
+    <nav>
+      <a href="home.html">Home</a>
+      <a class="on" href="auto.html">Auto</a>
+      <a href="bundle.html">Products</a>
+      <a href="checkout.html">Checkout</a>
+      <a href="profile.html">Profile</a>
+      <a href="vault.html">Vault</a>
+      <a href="reef.html">Reef</a>
+      <a href="bind.html">Bind</a>
+      <a href="host.html">Host</a>
+      <a href="live.html">Go live</a>
+    </nav>
+  </header>
+  <main>
+    <form id="form" class="card">
+      <label for="sentence">Brief</label>
+      <textarea id="sentence" required>A kelp forest dashboard for the Gulf.</textarea>
+      <label for="businessName">Business name</label>
+      <input id="businessName" required value="Kelp Chart" />
+      <label for="logoUrl">Logo URL</label>
+      <input id="logoUrl" required value="https://ofs.domains/mark.svg" />
+      <label for="description">Description</label>
+      <textarea id="description" required>Live kelp cover, temperature, and depth for the Gulf.</textarea>
+      <button type="submit">Run the platform</button>
+    </form>
+    <div class="card" id="out" hidden>
+      <div class="k" id="name"></div>
+      <p class="lead" id="due"></p>
+      <ol id="steps"></ol>
+      <p class="lead" id="live"></p>
+    </div>
+  </main>
+  <script src="./auth.js"></script>
+  <script src="./pricing.js"></script>
+  <script src="./mail.js"></script>
+  <script src="./host.js"></script>
+  <script src="./purchases.js"></script>
+  <script src="./run.js"></script>
+  <script>
+    const assistantBrief = sessionStorage.getItem("ofs.domains.ai-brief");
+    if (assistantBrief) {
+      document.getElementById("sentence").value = assistantBrief;
+      document.getElementById("description").value = assistantBrief;
+      sessionStorage.removeItem("ofs.domains.ai-brief");
+    }
+    document.getElementById("form").onsubmit = (e) => {
+      e.preventDefault();
+      const job = OFSRun.run({
+        sentence: document.getElementById("sentence").value,
+        businessName: document.getElementById("businessName").value,
+        logoUrl: document.getElementById("logoUrl").value,
+        description: document.getElementById("description").value,
+      });
+      document.getElementById("name").textContent = job.fqdn;
+      document.getElementById("due").textContent = job.plan + " · listing " + job.listing + " · due $" + job.quote.due;
+      const ol = document.getElementById("steps");
+      ol.innerHTML = job.steps.map((s) => "<li>" + s + "</li>").join("");
+      document.getElementById("out").hidden = false;
+      let i = 0;
+      const tick = () => {
+        if (i < ol.children.length) {
+          ol.children[i].classList.add("done");
+          i += 1;
+          setTimeout(tick, 220);
+        } else {
+          document.getElementById("live").textContent = job.free ? "Complimentary. Going live." : "Opening checkout.";
+          location.href = job.next;
+        }
+      };
+      tick();
+    };
+  </script>
+  <script src="./support.js"></script>
+  <script src="./reef-bg.js"></script>
+</body>
+</html>

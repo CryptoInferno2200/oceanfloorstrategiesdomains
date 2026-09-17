@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <title>OFS Domains — Reef</title>
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.82); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.45 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    header, main { max-width: 720px; margin: 0 auto; padding: 24px 20px; }
+    nav { display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 0; }
+    nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
+    nav a.on { color:var(--fg); background:var(--card); }
+    h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.03em; }
+    p.lead, .k { color:var(--muted); }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
+    canvas { width:100%; height:320px; border-radius:16px; display:block; background:#07222c; }
+    input { width:100%; height:48px; border:0; border-radius:12px; padding:0 14px; background:var(--card); color:var(--fg); box-shadow:0 0 0 1px var(--line); margin: 12px 0; }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="k">Living reef</div>
+    <h1 id="title">kelpchart.com</h1>
+    <p class="lead" id="line">Every name already has a body.</p>
+    <nav>
+      <a href="home.html">Home</a>
+      <a href="auto.html">Auto</a>
+      <a href="bundle.html">Products</a>
+      <a href="checkout.html">Checkout</a>
+      <a href="profile.html">Profile</a>
+      <a href="vault.html">Vault</a>
+      <a class="on" href="reef.html">Reef</a>
+      <a href="bind.html">Bind</a>
+      <a href="host.html">Host</a>
+      <a href="live.html">Go live</a>
+    </nav>
+  </header>
+  <main>
+    <input id="fqdn" value="kelpchart.com" />
+    <canvas id="reef" width="720" height="320"></canvas>
+  </main>
+  <script>
+    const SPECIES = { com:"Staghorn", net:"Kelp hold", org:"Brain coral", app:"Sea fan", ai:"Biolume polyps", io:"Table coral", studio:"Gorgonian", store:"Barrel sponge", gg:"Table coral" };
+    function split(fqdn) {
+      const n = (fqdn || "").trim().toLowerCase();
+      const i = n.lastIndexOf(".");
+      if (i <= 0) return { fqdn: "kelpchart.com", tld: "com" };
+      return { fqdn:n, tld:n.slice(i+1) };
+    }
+    async function sha256(s) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
+    }
+    function paint(raw) {
+      const { fqdn, tld } = split(raw);
+      document.getElementById("title").textContent = fqdn;
+      const c = document.getElementById("reef");
+      const ctx = c.getContext("2d");
+      const w = c.width, h = c.height;
+      sha256(fqdn).then(seed => {
+        const H = parseInt(seed.slice(0,4), 16) % 360;
+        const g = ctx.createLinearGradient(0,0,0,h);
+        g.addColorStop(0,"#07222c"); g.addColorStop(1,"#041016");
+        ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+        ctx.strokeStyle = `hsl(${H} 48% 50%)`;
+        ctx.lineCap = "round"; ctx.lineWidth = 2.2;
+        const cx = w/2, cy = h*0.82;
+        for (let i=0;i<5;i++) {
+          const a = -Math.PI/2 + (i-2)*0.32;
+          ctx.beginPath(); ctx.moveTo(cx,cy);
+          ctx.lineTo(cx+Math.cos(a)*90, cy+Math.sin(a)*90); ctx.stroke();
+        }
+        document.getElementById("line").textContent = (SPECIES[tld] || "Staghorn") + " hashed from " + fqdn;
+      });
+    }
+    const start = new URLSearchParams(location.search).get("fqdn") || "kelpchart.com";
+    document.getElementById("fqdn").value = start;
+    paint(start);
+    document.getElementById("fqdn").addEventListener("input", (e) => paint(e.target.value));
+    document.querySelectorAll("nav a").forEach((a) => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        location.href = a.getAttribute("href").split("?")[0] + "?fqdn=" + encodeURIComponent(split(document.getElementById("fqdn").value).fqdn);
+      });
+    });
+  </script>
+<script src="./mail.js"></script>
+<script src="./support.js"></script>
+  <script src="./reef-bg.js"></script>
+</body>
+</html>

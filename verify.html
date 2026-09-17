@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <title>OFS Domains — Verify seat</title>
+  <link rel="icon" href="./icon.svg" />
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.5 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    main { max-width: 28rem; margin: 12vh auto; padding: 24px 20px; }
+    h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.03em; margin: 8px 0 12px; }
+    p { margin: 0 0 12px; }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+    .lead { color:var(--muted); }
+    .err { color:#e0b7b0; }
+    a { color:var(--fg); }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="k">OFS Domains</p>
+    <h1 id="title">Checking the link…</h1>
+    <p class="lead" id="msg"></p>
+    <p><a href="home.html">Back to home</a></p>
+  </main>
+  <script src="./mail.js"></script>
+<script src="./auth.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const email = OFSSeat.norm(params.get("e") || "");
+    const token = String(params.get("t") || "").trim();
+    const title = document.getElementById("title");
+    const msg = document.getElementById("msg");
+
+    (async () => {
+      if (!OFSSeat.valid(email) || token.length < 32) {
+        title.textContent = "Link is incomplete.";
+        msg.textContent = "Ask for a new verify message to that inbox.";
+        history.replaceState({}, "", "verify.html");
+        return;
+      }
+      const result = await OFSSeat.consumeToken(email, token);
+      history.replaceState({}, "", "verify.html");
+      if (!result.ok) {
+        title.textContent = "Could not verify.";
+        msg.textContent = result.error;
+        return;
+      }
+      title.textContent = "Inbox confirmed.";
+      msg.textContent = result.already
+        ? "This seat was already verified. You can sign in."
+        : "That inbox owns this seat. Free year is on. Sign in with the password you set.";
+    })();
+  </script>
+<script src="./support.js"></script>
+</body>
+</html>

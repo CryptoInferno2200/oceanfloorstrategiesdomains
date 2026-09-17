@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <title>OFS Domains — Hosting</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.5 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    header, main { max-width: 760px; margin: 0 auto; padding: 24px 20px; }
+    nav { display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 0; }
+    nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
+    nav a.on { color:var(--fg); background:var(--card); }
+    h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.03em; }
+    .k, .lead { color:var(--muted); }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
+    .card { margin-top:16px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
+    label { display:block; font-size:12px; color:var(--muted); margin: 12px 0 6px; }
+    input, textarea { width:100%; border:0; border-radius:12px; padding:12px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
+    button, a.btn { display:inline-block; height:44px; line-height:44px; padding:0 16px; border:0; border-radius:12px; background:var(--fg); color:var(--bg); font-weight:600; text-decoration:none; cursor:pointer; font: inherit; }
+    .list { list-style:none; margin:12px 0 0; padding:0; display:grid; gap:8px; }
+    .list li { display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; padding:12px; border-radius:12px; box-shadow:0 0 0 1px var(--line); }
+    .list a { color:#cfe4dc; }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="k">Hosting route</div>
+    <h1>Names live here.</h1>
+    <p class="lead">Claim a name. This project hosts the site. HTTPS is on. Custom DNS ALIAS points at this host later.</p>
+    <nav>
+      <a href="home.html">Home</a>
+      <a href="auto.html">Auto</a>
+      <a href="bundle.html">Products</a>
+      <a href="checkout.html">Checkout</a>
+      <a href="profile.html">Profile</a>
+      <a href="vault.html">Vault</a>
+      <a href="reef.html">Reef</a>
+      <a href="bind.html">Bind</a>
+      <a class="on" href="host.html">Host</a>
+      <a href="live.html">Go live</a>
+    </nav>
+  </header>
+  <main>
+    <form class="card" id="form">
+      <label for="fqdn">Name</label>
+      <input id="fqdn" required placeholder="kelpchart.com" value="kelpchart.com" />
+      <label for="businessName">Business</label>
+      <input id="businessName" required value="Kelp Chart" />
+      <label for="description">What this site is</label>
+      <textarea id="description" required>Live kelp cover for the Gulf.</textarea>
+      <button type="submit" style="margin-top:16px">Publish on this host</button>
+    </form>
+    <div class="card">
+      <div class="k">On this host</div>
+      <ul class="list" id="list"></ul>
+    </div>
+  </main>
+  <script src="./host.js"></script>
+  <script>
+    function paint() {
+      const rows = OFSHost.load();
+      document.getElementById("list").innerHTML = rows.length
+        ? rows.map((s) => "<li><span>" + s.fqdn + "<br><span class='k'>" + s.plan + " · TLS</span></span><a href='" + s.route + "'>Open site</a></li>").join("")
+        : "<li>No names hosted yet.</li>";
+    }
+    document.getElementById("form").onsubmit = (e) => {
+      e.preventDefault();
+      const out = OFSHost.publish({
+        fqdn: document.getElementById("fqdn").value,
+        businessName: document.getElementById("businessName").value,
+        description: document.getElementById("description").value,
+        plan: "claim",
+        listing: "both",
+      });
+      if (out.ok) location.href = out.site.route;
+    };
+    OFSHost.seed();
+    paint();
+  </script>
+  <script src="./mail.js"></script>
+  <script src="./support.js"></script>
+  <script src="./reef-bg.js"></script>
+</body>
+</html>

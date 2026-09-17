@@ -1,0 +1,10 @@
+# Cloudflare Pages
+http://*  https://:splat  301!
+/  /home.html  302
+/index.html  /home.html  302
+/index  /home.html  302
+/vault  /vault.html  302
+/host  /host.html  302
+/name  /name.html  302
+/privacy  /privacy.html  302
+/rights  /rights.html  302

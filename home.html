@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="description" content="Claim a real name. AI runs the site. Web and Web3 included. Claim $10. OFS One $99. Abyss One $299." />
+  <meta property="og:title" content="OFS Domains" />
+  <meta property="og:description" content="Claim. Generate. Go live. Both listings $0 extra." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <title>OFS Domains — Claim. Generate. Go live.</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <link rel="preload" href="./auth.js" as="script" />
+  <link rel="dns-prefetch" href="https://buy.stripe.com" />
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.5 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    .top {
+      display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:12px;
+      max-width: 760px; margin: 0 auto; padding: 16px 20px 0; z-index:30;
+    }
+    .brand .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+    .brand h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.04em; font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 6px 0 0; }
+    .account { position: relative; flex: 0 0 auto; }
+    .tabs { display:flex; gap:6px; }
+    .tabs button {
+      border:0; background:transparent; color:var(--muted); font: inherit; font-size:13px;
+      min-height:44px; padding:10px 14px; border-radius:999px; box-shadow:0 0 0 1px var(--line); cursor:pointer;
+    }
+    .tabs button.on, .tabs button[aria-expanded="true"] { color:var(--fg); background:var(--card); }
+    .panel {
+      position:absolute; right:0; top:calc(100% + 8px); z-index:20;
+      width:min(20.5rem, calc(100vw - 2rem));
+      max-height:calc(100vh - 6rem); overflow:auto; overscroll-behavior:contain;
+      padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); pointer-events:auto;
+    }
+    .panel[hidden] { display:none; }
+    button[hidden] { display:none !important; }
+    .operator-settings { margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+    .operator-settings summary {
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      min-height:40px; color:var(--muted); font-size:13px; cursor:pointer; list-style:none;
+    }
+    .operator-settings summary::-webkit-details-marker { display:none; }
+    .operator-settings summary::after { content:"+"; font-size:18px; line-height:1; }
+    .operator-settings[open] summary::after { content:"−"; }
+    .operator-settings summary:focus-visible { outline:2px solid #cfe4dc; outline-offset:3px; border-radius:4px; }
+    header, main { max-width: 760px; margin: 0 auto; padding: 12px 20px 28px; }
+    header { padding-top: 8px; }
+    .card p { margin: 8px 0 0; }
+    .page-nav { position:relative; display:inline-block; margin:8px 0 0; }
+    .nav-trigger {
+      display:flex; align-items:center; gap:10px; min-height:44px; padding:10px 14px;
+      border:0; border-radius:999px; background:var(--card); color:var(--fg);
+      box-shadow:0 0 0 1px var(--line); font:inherit; font-size:13px; cursor:pointer;
+    }
+    .nav-trigger svg { width:14px; height:14px; color:var(--muted); transition:transform .18s ease; }
+    .nav-trigger[aria-expanded="true"] svg { transform:rotate(180deg); }
+    .nav-trigger:focus-visible, .nav-menu a:focus-visible { outline:2px solid #cfe4dc; outline-offset:3px; }
+    .nav-menu {
+      position:absolute; left:0; top:calc(100% + 8px); z-index:15; width:min(20rem, calc(100vw - 2.5rem));
+      display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:8px; border-radius:16px;
+      background:rgba(7,20,26,.98); box-shadow:0 18px 50px rgba(0,0,0,.32), 0 0 0 1px var(--line);
+    }
+    .nav-menu[hidden] { display:none; }
+    .nav-menu a { color:var(--muted); text-decoration:none; font-size:13px; padding:10px 12px; border-radius:10px; }
+    .nav-menu a:hover { color:var(--fg); background:rgba(238,244,242,.06); }
+    .nav-menu a.on { color:var(--fg); background:var(--card); }
+    .lead { color:var(--muted); }
+    .intro, .ai-desk { transition:opacity .35s ease, transform .35s ease; }
+    .intro.resting-away, .ai-desk.resting-away { opacity:0; transform:translateY(-6px); pointer-events:none; }
+    .ai-desk {
+      position:relative; margin:18px 0 4px; overflow:hidden; border-radius:22px;
+      background:linear-gradient(145deg, rgba(11,31,38,.96), rgba(6,19,25,.94));
+      box-shadow:0 20px 70px rgba(0,0,0,.24), 0 0 0 1px var(--line);
+    }
+    .ai-desk::before {
+      content:""; position:absolute; inset:0; pointer-events:none;
+      background:radial-gradient(circle at 90% 0%, rgba(158,193,181,.13), transparent 38%);
+    }
+    .ai-head { position:relative; display:flex; align-items:flex-start; justify-content:space-between; gap:18px; padding:18px 18px 12px; }
+    .ai-head h2 { margin:4px 0 0; font:400 1.35rem/1.15 Georgia,serif; letter-spacing:-.025em; }
+    .ai-status { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:11px; white-space:nowrap; }
+    .ai-status::before { content:""; width:7px; height:7px; border-radius:50%; background:#9ebfb5; box-shadow:0 0 0 4px rgba(158,191,181,.1); }
+    .ai-thread { position:relative; display:grid; gap:9px; max-height:18rem; overflow:auto; padding:6px 18px 14px; scrollbar-width:thin; }
+    .ai-message { width:fit-content; max-width:88%; margin:0; padding:10px 12px; border-radius:13px; font-size:14px; white-space:pre-wrap; }
+    .ai-message.bot { color:#dce8e4; background:rgba(238,244,242,.07); border-bottom-left-radius:4px; }
+    .ai-message.user { margin-left:auto; color:var(--bg); background:var(--fg); border-bottom-right-radius:4px; }
+    .ai-message.error { color:#e0b7b0; box-shadow:inset 0 0 0 1px rgba(224,183,176,.25); }
+    .ai-message.thinking { color:var(--muted); animation:breathe 1.1s ease-in-out infinite alternate; }
+    @keyframes breathe { to { opacity:.45; transform:translateY(-1px); } }
+    .ai-suggestions { position:relative; display:flex; gap:7px; padding:0 18px 12px; overflow:auto; }
+    .ai-suggestions button { flex:0 0 auto; border:0; border-radius:999px; padding:7px 10px; background:transparent; color:var(--muted); box-shadow:0 0 0 1px var(--line); font:inherit; font-size:11px; cursor:pointer; }
+    .ai-compose { position:relative; display:grid; grid-template-columns:1fr auto; gap:8px; padding:10px; margin:0 10px 10px; border-radius:15px; background:#07161c; box-shadow:0 0 0 1px var(--line); }
+    .ai-compose textarea { min-height:44px; max-height:8rem; resize:vertical; padding:10px 9px; border:0; outline:0; background:transparent; color:var(--fg); font:inherit; }
+    .ai-compose button { align-self:end; width:44px; height:44px; border:0; border-radius:12px; background:var(--fg); color:var(--bg); cursor:pointer; }
+    .ai-compose button:disabled { opacity:.45; cursor:wait; }
+    .ai-action { position:relative; display:inline-block; margin:0 18px 16px; padding:10px 13px; border-radius:11px; background:#cfe4dc; color:var(--bg); text-decoration:none; font-size:13px; font-weight:600; }
+    .ai-suggestions button:focus-visible, .ai-compose textarea:focus-visible, .ai-compose button:focus-visible, .ai-action:focus-visible { outline:2px solid #cfe4dc; outline-offset:3px; }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+    .row { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+    a.btn, button.btn { display:inline-block; padding:14px 18px; border-radius:14px; background:var(--fg); color:var(--bg); text-decoration:none; font-weight:600; border:0; cursor:pointer; font: inherit; }
+    a.ghost, button.ghost { background:transparent; color:var(--fg); box-shadow:0 0 0 1px var(--line); }
+    .grid { display:grid; gap:12px; margin-top:28px; }
+    @media (min-width:560px) { .grid { grid-template-columns: 1fr 1fr; } }
+    .card { padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
+    label { display:block; font-size:12px; color:var(--muted); margin: 10px 0 6px; }
+    input { width:100%; height:44px; border:0; border-radius:12px; padding:0 12px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
+    .err { color:#e0b7b0; font-size:13px; margin-top:8px; }
+    .ok { color:#cfe4dc; font-size:13px; margin-top:8px; }
+    .list { list-style:none; margin:10px 0 0; padding:0; display:grid; gap:8px; }
+    .list li { display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; padding:10px 12px; border-radius:12px; box-shadow:0 0 0 1px var(--line); }
+    .list button { border:0; background:transparent; color:var(--muted); cursor:pointer; font: inherit; font-size:12px; min-height:36px; padding:0 6px; }
+    .mono { font-family: ui-monospace, monospace; font-size:12px; }
+    .hidden { display:none !important; }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+
+  <div class="top">
+    <div class="brand">
+      <div class="k">Ocean Floor Strategies</div>
+      <h1>OFS Domains</h1>
+    </div>
+    <div class="account" id="account">
+      <div class="tabs">
+        <button type="button" id="tab-signin" aria-expanded="false">Sign in</button>
+        <button type="button" id="tab-whitelist" aria-expanded="false">Whitelist</button>
+        <button type="button" id="tab-notifications" class="hidden" aria-expanded="false">Notifications</button>
+      </div>
+      <div class="panel" id="panel-signin" hidden>
+        <div id="signed-out">
+          <p class="k">Seat</p>
+          <p class="lead" style="margin:8px 0 0;font-size:14px">Create an account, confirm your email, and sign in securely. Whitelisted inboxes also receive a complimentary seat.</p>
+          <form id="form-register">
+            <label for="email">Email</label>
+            <input id="email" type="email" required autocomplete="username" />
+            <label for="password">Password</label>
+            <input id="password" type="password" required minlength="8" autocomplete="current-password" />
+            <div class="row" style="margin-top:12px">
+              <button class="btn" type="submit" id="do-register">Create account</button>
+              <button class="btn ghost" type="button" id="do-login">Sign in</button>
+            </div>
+            <button class="btn ghost" type="button" id="do-forgot" style="margin-top:10px;width:100%">Forgot password</button>
+            <button class="btn ghost" type="button" id="do-google" style="margin-top:10px;width:100%" hidden>Continue with Google</button>
+          </form>
+          <p class="err" id="auth-err"></p>
+          <p class="ok" id="auth-ok"></p>
+        </div>
+        <div id="signed-in" class="hidden">
+          <p class="k">Profile</p>
+          <p id="who" style="margin:8px 0 0"></p>
+          <p class="lead" id="seat-note" style="margin:8px 0 0;font-size:14px"></p>
+          <p class="k" style="margin-top:14px">Vault</p>
+          <ul class="list" id="buy-list"></ul>
+          <p class="k" style="margin-top:14px">Whitelist</p>
+          <ul class="list" id="profile-white"></ul>
+          <a class="btn ghost" href="profile.html" style="margin-top:12px;width:100%;text-align:center">Open full profile</a>
+          <button class="btn ghost" type="button" id="do-out" style="margin-top:12px;width:100%">Sign out</button>
+        </div>
+      </div>
+      <div class="panel" id="panel-whitelist" hidden>
+        <p class="k">Whitelist</p>
+        <p class="lead" style="margin:8px 0 0;font-size:14px">Invited inboxes get a free seat. They still create a password and verify that inbox.</p>
+        <p class="lead" id="whitelist-access" style="margin:8px 0 0;font-size:14px">Sign in with the operator account to manage invited inboxes.</p>
+        <form id="form-invite" class="hidden">
+          <label for="invite">Invite email</label>
+          <input id="invite" type="email" required placeholder="name@studio.com" />
+          <button class="btn" type="submit" style="margin-top:12px;width:100%">Add free seat</button>
+        </form>
+        <p class="err" id="invite-err"></p>
+        <p class="ok" id="invite-ok"></p>
+        <ul class="list" id="invite-list"></ul>
+      </div>
+      <div class="panel" id="panel-notifications" hidden>
+        <p class="k">Notifications</p>
+        <p class="lead" style="margin:8px 0 0;font-size:14px">Renewal reminders and account-wide updates in one place.</p>
+        <p class="err" id="notice-err"></p>
+        <ul class="list" id="notice-list"><li class="lead">Loading notifications…</li></ul>
+        <form id="form-broadcast" class="hidden">
+          <div class="operator-settings">
+            <p class="k">Mass user update</p>
+            <label for="broadcast-title">Title</label>
+            <input id="broadcast-title" maxlength="100" required />
+            <label for="broadcast-message">Message</label>
+            <textarea id="broadcast-message" maxlength="1000" required style="width:100%;min-height:88px;border:0;border-radius:12px;padding:12px;background:#07161c;color:var(--fg);box-shadow:0 0 0 1px var(--line);font:inherit"></textarea>
+            <button class="btn" type="submit" style="margin-top:12px;width:100%">Send to all users</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <header>
+    <p class="lead intro" id="home-intro">Last stop for websites. Search a sentence. Claim the name. Host it. Build it. List it on web and Web3. Pay one plan. Vault keeps the books. You should not need another store.</p>
+    <section class="ai-desk" aria-labelledby="ai-title">
+      <div class="ai-head">
+        <div><div class="k">OFS build desk</div><h2 id="ai-title">Describe it. Start building.</h2></div>
+        <span class="ai-status">Ready</span>
+      </div>
+      <div class="ai-thread" id="ai-thread" role="log" aria-live="polite" aria-relevant="additions">
+        <p class="ai-message bot">Tell me what you want to launch. I can shape the brief and take you into the right claim, build, host, or publish workflow.</p>
+      </div>
+      <div class="ai-suggestions" aria-label="Example requests">
+        <button type="button" data-prompt="Build a refined portfolio for a marine photographer">Marine portfolio</button>
+        <button type="button" data-prompt="Claim a name for my neighborhood bakery">Claim a bakery name</button>
+        <button type="button" data-prompt="Publish the website I already uploaded">Publish my site</button>
+      </div>
+      <form class="ai-compose" id="ai-form">
+        <label class="hidden" for="ai-prompt">Describe what you want to create</label>
+        <textarea id="ai-prompt" rows="1" maxlength="1200" required placeholder="A field guide for coastal trails…"></textarea>
+        <button type="submit" id="ai-send" aria-label="Send request">
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="m3 9 11-5-3.4 10-2.1-4.5L3 9Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+        </button>
+      </form>
+      <a class="ai-action" id="ai-action" href="auto.html" hidden>Open build workflow</a>
+    </section>
+    <nav class="page-nav" aria-label="Site navigation">
+      <button class="nav-trigger" id="nav-trigger" type="button" aria-expanded="false" aria-controls="nav-menu">
+        <span>Explore · Home</span>
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 6 5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="nav-menu" id="nav-menu" hidden>
+        <a class="on" href="home.html" aria-current="page">Home</a>
+        <a href="auto.html">Auto</a>
+        <a href="drop.html">Zip drop</a>
+        <a href="bundle.html">Products</a>
+        <a href="checkout.html">Checkout</a>
+        <a href="profile.html">Profile</a>
+        <a href="vault.html">Vault</a>
+        <a href="reef.html">Reef</a>
+        <a href="bind.html">Bind</a>
+        <a href="host.html">Host</a>
+        <a href="live.html">Go live</a>
+        <a href="sauce.html">Sauce</a>
+        <a href="everything.html">Everything</a>
+      </div>
+    </nav>
+    <div class="row">
+      <a class="btn" href="auto.html">Run the platform</a>
+      <a class="btn ghost" href="name.html">Already have a site · name only $10</a>
+      <a class="btn ghost" href="drop.html">Drop a zip</a>
+    </div>
+  </header>
+  <main>
+    <div class="grid">
+      <article class="card">
+        <div class="k">Web</div>
+        <p>Real ICANN name. Site on HTTPS. Mail forwards. Same year next year.</p>
+      </article>
+      <article class="card">
+        <div class="k">Application</div>
+        <p>Install this page. Auto launch, profile, reef, and live receipt stay on the phone.</p>
+      </article>
+      <article class="card">
+        <div class="k">Free seats</div>
+        <p>Creator plus invited inboxes only. Everyone else pays the year. Invites still set a password and verify.</p>
+      </article>
+      <article class="card">
+        <div class="k">All-in-one</div>
+        <p>Claim $10 · OFS One $99 · Abyss One $299. Plot and deed stay on the name.</p>
+      </article>
+      <article class="card">
+        <div class="k">DNS</div>
+        <p>Apex CNAME or ALIAS to your Pages host. <span class="mono">www</span> CNAME to the same. TXT <span class="mono">OFS1</span> and <span class="mono">_ens</span> for the Web3 listing. CAA + HSTS mint TLS at the host. SSL is $0.</p>
+        <p><a href="dns.txt">Zone file</a> · <a href="ssl.txt">TLS</a></p>
+      </article>
+    </div>
+    <p class="lead" style="margin-top:28px;font-size:13px">Publisher rights stay with the creator. No remix or duplication without consent. <a href="rights.html">Rights</a></p>
+  </main>
+  <script src="./mail.js"></script>
+<script src="./auth.js"></script>
+  <script src="./purchases.js"></script>
+  <script src="./oauth.js"></script>
+  <script src="./sync.js"></script>
+  <script src="./host.js"></script>
+  <script type="module">
+    import { login, signup, logout, getUser, getSettings, handleAuthCallback, requestPasswordRecovery, oauthLogin, updateUser, acceptInvite, AuthError, MissingIdentityError } from "https://esm.sh/@netlify/identity@1.2.0";
+    const S = OFSSeat;
+    const $ = (id) => document.getElementById(id);
+    let identityUser = null;
+    let remoteWhitelist = [];
+    let recoveryMode = false;
+    let inviteToken = "";
+
+    function authMessage(error) {
+      const detail = String(error && error.message || "").toLowerCase();
+      if (error instanceof MissingIdentityError) return "Email authentication is temporarily unavailable. Please try again shortly.";
+      if (error instanceof AuthError && error.status === 401 && detail.includes("confirm")) return "Confirm this email from the message in your inbox, then sign in.";
+      if (error instanceof AuthError && error.status === 401) return "That email and password do not match. Create the account first if this is your first visit.";
+      if (error instanceof AuthError && error.status === 403) return "Sign-in is unavailable for this account. Please try again or reset the password.";
+      return error && error.message ? error.message : "Authentication failed. Please try again.";
+    }
+
+    async function whitelistRequest(options) {
+      const response = await fetch("/api/whitelist" + (options && options.query || ""), {
+        method: options && options.method || "GET",
+        headers: options && options.body ? { "content-type": "application/json" } : undefined,
+        body: options && options.body ? JSON.stringify(options.body) : undefined,
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.error || "Whitelist request failed.");
+      }
+      return response.status === 204 ? null : response.json();
+    }
+
+    function closeNav() {
+      $("nav-menu").hidden = true;
+      $("nav-trigger").setAttribute("aria-expanded", "false");
+    }
+
+    $("nav-trigger").addEventListener("click", () => {
+      const opening = $("nav-menu").hidden;
+      $("nav-menu").hidden = !opening;
+      $("nav-trigger").setAttribute("aria-expanded", String(opening));
+      if (opening) $("nav-menu").querySelector("a").focus();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !$("nav-menu").hidden) {
+        closeNav();
+        $("nav-trigger").focus();
+      }
+    });
+
+    document.addEventListener("mousedown", (event) => {
+      if (!event.target.closest(".page-nav")) closeNav();
+    });
+
+    const aiHistory = [];
+    const intro = $("home-intro");
+    const aiDesk = document.querySelector(".ai-desk");
+    const aiThread = $("ai-thread");
+    const aiForm = $("ai-form");
+    const aiPrompt = $("ai-prompt");
+    const aiSend = $("ai-send");
+    const aiAction = $("ai-action");
+    let workspaceTimer;
+
+    function accountPanelOpen() {
+      return !$("panel-signin").hidden || !$("panel-whitelist").hidden || !$("panel-notifications").hidden;
+    }
+
+    function showWorkspace() {
+      if (accountPanelOpen()) return;
+      intro.classList.remove("resting-away");
+      aiDesk.classList.remove("resting-away");
+      aiDesk.inert = false;
+      aiDesk.removeAttribute("aria-hidden");
+    }
+
+    function pauseWorkspace(event) {
+      if (event && event.target instanceof Element && event.target.closest(".ai-desk")) return;
+      intro.classList.add("resting-away");
+      aiDesk.classList.add("resting-away");
+      aiDesk.inert = true;
+      aiDesk.setAttribute("aria-hidden", "true");
+      clearTimeout(workspaceTimer);
+      workspaceTimer = setTimeout(showWorkspace, 1000);
+    }
+
+    ["scroll", "pointerdown", "keydown"].forEach((name) => {
+      window.addEventListener(name, pauseWorkspace, { passive:true });
+    });
+
+    function addAiMessage(text, kind) {
+      const message = document.createElement("p");
+      message.className = "ai-message " + kind;
+      message.textContent = text;
+      aiThread.appendChild(message);
+      aiThread.scrollTop = aiThread.scrollHeight;
+      return message;
+    }
+
+    async function askOFS(prompt) {
+      const clean = String(prompt || "").trim();
+      if (!clean || aiSend.disabled) return;
+      addAiMessage(clean, "user");
+      aiHistory.push({ role:"user", content:clean });
+      aiPrompt.value = "";
+      aiAction.hidden = true;
+      aiSend.disabled = true;
+      const thinking = addAiMessage("Charting the quickest route…", "bot thinking");
+      try {
+        const response = await fetch("/api/ofs-assistant", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({ messages:aiHistory.slice(-8) }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "The build desk is unavailable.");
+        thinking.remove();
+        addAiMessage(data.reply, "bot");
+        aiHistory.push({ role:"assistant", content:data.reply });
+        if (data.action && data.action.href) {
+          const allowed = ["auto.html", "name.html", "drop.html", "host.html", "live.html"];
+          if (allowed.includes(data.action.href)) {
+            aiAction.href = data.action.href;
+            aiAction.textContent = data.action.label || "Open workflow";
+            aiAction.hidden = false;
+            aiAction.onclick = () => sessionStorage.setItem("ofs.domains.ai-brief", data.action.brief || clean);
+          }
+        }
+      } catch (error) {
+        thinking.remove();
+        addAiMessage(error.message || "The build desk is unavailable. Try again.", "bot error");
+      } finally {
+        aiSend.disabled = false;
+        aiPrompt.focus();
+      }
+    }
+
+    aiForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      askOFS(aiPrompt.value);
+    });
+    aiPrompt.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        aiForm.requestSubmit();
+      }
+    });
+    document.querySelectorAll("[data-prompt]").forEach((button) => {
+      button.addEventListener("click", () => askOFS(button.dataset.prompt));
+    });
+
+    function publicName(email) {
+      if (S.isCreator(email)) return "Creator";
+      return email;
+    }
+
+    function closePanels() {
+      const wasOpen = accountPanelOpen();
+      $("panel-signin").hidden = true;
+      $("panel-whitelist").hidden = true;
+      $("panel-notifications").hidden = true;
+      $("tab-signin").setAttribute("aria-expanded", "false");
+      $("tab-whitelist").setAttribute("aria-expanded", "false");
+      $("tab-notifications").setAttribute("aria-expanded", "false");
+      if (wasOpen) pauseWorkspace();
+    }
+
+    function openPanel(which) {
+      pauseWorkspace();
+      const sign = which === "signin";
+      const whitelist = which === "whitelist";
+      const notifications = which === "notifications";
+      $("panel-signin").hidden = !sign;
+      $("panel-whitelist").hidden = !whitelist;
+      $("panel-notifications").hidden = !notifications;
+      $("tab-signin").setAttribute("aria-expanded", String(sign));
+      $("tab-whitelist").setAttribute("aria-expanded", String(whitelist));
+      $("tab-notifications").setAttribute("aria-expanded", String(notifications));
+    }
+
+    async function paintInvites() {
+      const ul = $("invite-list");
+      ul.innerHTML = "";
+      const allowed = Boolean(identityUser && S.isCreator(identityUser.email));
+      $("form-invite").classList.toggle("hidden", !allowed);
+      $("whitelist-access").classList.toggle("hidden", allowed);
+      if (!allowed) {
+        ul.innerHTML = "<li class='lead' style='display:block'>Whitelist management is available after operator sign-in.</li>";
+        return;
+      }
+      try {
+        const result = await whitelistRequest();
+        remoteWhitelist = result.whitelist.map((row) => row.email);
+      } catch (error) {
+        $("invite-err").textContent = error.message;
+        return;
+      }
+      if (!remoteWhitelist.length) {
+        ul.innerHTML = "<li class='lead' style='display:block'>No invites yet.</li>";
+        return;
+      }
+      remoteWhitelist.forEach((email) => {
+        const status = "Allowed";
+        const li = document.createElement("li");
+        li.innerHTML = "<span class='mono'>" + email + "<br><span class='k'>" + status + "</span></span>";
+        const actions = document.createElement("span");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "Remove";
+        btn.disabled = S.isCreator(email);
+        btn.addEventListener("click", async () => {
+          try {
+            await whitelistRequest({ method: "DELETE", query: "?email=" + encodeURIComponent(email) });
+            await paintInvites();
+          } catch (error) { $("invite-err").textContent = error.message; }
+        });
+        actions.appendChild(btn);
+        li.appendChild(actions);
+        ul.appendChild(li);
+      });
+    }
+
+    function paint() {
+      if (window.OFSHost && OFSHost.seed) OFSHost.seed();
+      const state = S.load();
+      const session = identityUser && S.norm(identityUser.email);
+      const creator = session && S.isCreator(session);
+      if (session) {
+        if (!state.whitelist.includes(session)) state.whitelist.push(session);
+        state.members[session] = { ...(state.members[session] || {}), email: session, verified: true, provider: "identity" };
+        state.session = session;
+        S.save(state);
+      }
+      $("tab-notifications").classList.toggle("hidden", !session);
+      $("signed-out").classList.toggle("hidden", Boolean(session));
+      $("signed-in").classList.add("hidden");
+
+      if (session && S.isCreator(session)) {
+        $("tab-signin").textContent = "Profile";
+        $("who").textContent = "Signed in as Creator · complimentary seat";
+        $("seat-note").textContent = "Inbox verified. Invite on Whitelist. They still verify too.";
+        $("signed-in").classList.remove("hidden");
+        $("signed-out").classList.add("hidden");
+        paintInvites();
+        paintBuys();
+        return;
+      }
+
+      if (session) {
+        $("tab-signin").textContent = "Profile";
+        $("who").textContent = "Signed in as " + publicName(session);
+        $("seat-note").textContent = S.free(state, session)
+          ? "Verified invite. This year is free on this vault."
+          : "Public account. Paid year still applies.";
+        $("signed-in").classList.remove("hidden");
+        $("signed-out").classList.add("hidden");
+        paintBuys();
+        return;
+      }
+
+      $("tab-signin").textContent = "Sign in";
+    }
+
+    function paintBuys() {
+      const ul = $("buy-list");
+      if (!ul) return;
+      const rows = window.OFSPurchases ? OFSPurchases.forAccount() : [];
+      ul.innerHTML = rows.length
+        ? rows.map((r) => {
+            const pay = r.complimentary || r.due === 0 ? "free" : "$" + Number(r.due).toFixed(2);
+            return "<li><span>" + r.label + "<br><span class='mono'>" + (r.fqdn || "") + "</span></span><span>" + pay + "</span></li>";
+          }).join("")
+        : "<li>Vault is empty.</li>";
+      const white = $("profile-white");
+      if (!white) return;
+      const state = S.load();
+      const invited = (state.whitelist || []).slice();
+      if (!invited.includes(S.CREATOR)) invited.unshift(S.CREATOR);
+      white.innerHTML = invited.map((email) => {
+        const m = state.members[email];
+        const status = m && m.verified ? "verified" : "invited";
+        return "<li><span class='mono'>" + email + "</span><span class='k'>" + status + "</span></li>";
+      }).join("");
+    }
+    if (S.onSync) S.onSync(() => { paintBuys(); });
+
+    $("tab-signin").addEventListener("click", () => {
+      if (!$("panel-signin").hidden) closePanels();
+      else openPanel("signin");
+    });
+    $("tab-whitelist").addEventListener("click", () => {
+      if (!$("panel-whitelist").hidden) closePanels();
+      else {
+        openPanel("whitelist");
+        paintInvites();
+      }
+    });
+    $("tab-notifications").addEventListener("click", () => {
+      if (!$("panel-notifications").hidden) closePanels();
+      else {
+        openPanel("notifications");
+        paintNotifications();
+      }
+    });
+
+    function escapeHtml(value) {
+      const span = document.createElement("span");
+      span.textContent = String(value || "");
+      return span.innerHTML;
+    }
+
+    async function paintNotifications() {
+      const list = $("notice-list");
+      $("notice-err").textContent = "";
+      list.innerHTML = "<li class='lead'>Loading notifications…</li>";
+      try {
+        const response = await fetch("/api/notifications");
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "Notifications are unavailable.");
+        $("form-broadcast").classList.toggle("hidden", !result.canBroadcast);
+        const reminders = (result.renewals || []).map((row) => {
+          const when = new Date(row.renews_at).toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+          const amount = row.complimentary ? "Complimentary" : "$" + (Number(row.amount_cents) / 100).toFixed(2);
+          return "<li><span><strong>Renewal reminder</strong><br>" + escapeHtml(row.label) + " · " + escapeHtml(row.fqdn || "Account service") + "</span><span class='k'>" + amount + " · " + when + "</span></li>";
+        });
+        const updates = (result.updates || []).map((row) => {
+          const when = new Date(row.created_at).toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+          return "<li style='display:block'><strong>" + escapeHtml(row.title) + "</strong><br><span class='lead'>" + escapeHtml(row.message) + "</span><br><span class='k'>" + when + "</span></li>";
+        });
+        list.innerHTML = reminders.concat(updates).join("") || "<li class='lead'>You’re all caught up.</li>";
+      } catch (error) {
+        list.innerHTML = "";
+        $("notice-err").textContent = error.message;
+      }
+    }
+
+    $("form-broadcast").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      $("notice-err").textContent = "";
+      try {
+        const response = await fetch("/api/notifications", {
+          method:"POST",
+          headers:{ "content-type":"application/json" },
+          body:JSON.stringify({ title:$("broadcast-title").value, message:$("broadcast-message").value }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "Update could not be sent.");
+        event.currentTarget.reset();
+        await paintNotifications();
+      } catch (error) { $("notice-err").textContent = error.message; }
+    });
+
+    function canInvite() {
+      return Boolean(identityUser && S.isCreator(identityUser.email));
+    }
+
+    document.addEventListener("mousedown", (e) => {
+      if (!$("account").contains(e.target)) closePanels();
+    });
+
+    $("form-register").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      $("auth-err").textContent = "";
+      $("auth-ok").textContent = "";
+      const email = S.norm($("email").value);
+      const password = $("password").value;
+      if (password.length < 8) { $("auth-err").textContent = "Password needs 8 characters."; return; }
+      try {
+        if (inviteToken) {
+          identityUser = await acceptInvite(inviteToken, password);
+          inviteToken = "";
+          $("email").readOnly = false;
+          $("do-register").textContent = "Create account";
+          $("auth-ok").textContent = "Password created. You are signed in.";
+          paint();
+          openPanel("signin");
+          return;
+        }
+        if (!S.valid(email)) { $("auth-err").textContent = "Enter a valid email."; return; }
+        if (recoveryMode) {
+          identityUser = await updateUser({ password });
+          recoveryMode = false;
+          $("email").readOnly = false;
+          $("do-register").textContent = "Create account";
+          $("auth-ok").textContent = "Password updated. You are signed in.";
+          paint();
+          openPanel("signin");
+          return;
+        }
+        const user = await signup(email, password);
+        if (user.confirmedAt) {
+          identityUser = user;
+          paint();
+        } else {
+          $("auth-ok").textContent = "Check your email to confirm your account, then sign in.";
+        }
+      } catch (error) {
+        $("auth-err").textContent = authMessage(error);
+        openPanel("signin");
+      }
+    });
+
+    $("do-google").addEventListener("click", () => {
+      if ($("do-google").hidden) return;
+      $("auth-err").textContent = "";
+      $("auth-ok").textContent = "";
+      $("do-google").disabled = true;
+      $("do-google").textContent = "Opening Google…";
+      try {
+        oauthLogin("google");
+      } catch (error) {
+        // oauthLogin redirects by assigning location, then intentionally throws.
+        // Only surface genuine failures if the browser remains on this page.
+        if (!error || error.message !== "Redirecting to OAuth provider") {
+          $("do-google").disabled = false;
+          $("do-google").textContent = "Continue with Google";
+          $("auth-err").textContent = authMessage(error);
+          openPanel("signin");
+        }
+      }
+    });
+
+    $("do-forgot").addEventListener("click", async () => {
+      $("auth-err").textContent = "";
+      $("auth-ok").textContent = "";
+      const email = S.norm($("email").value);
+      if (!S.valid(email)) { $("auth-err").textContent = "Enter the inbox first."; return; }
+      try {
+        await requestPasswordRecovery(email);
+        $("auth-ok").textContent = "Check your email for a password reset link.";
+      } catch (error) { $("auth-err").textContent = authMessage(error); }
+    });
+
+    $("do-login").addEventListener("click", async () => {
+      $("auth-err").textContent = "";
+      $("auth-ok").textContent = "";
+      const email = S.norm($("email").value);
+      const password = $("password").value;
+      if (!S.valid(email) || !password) {
+        $("auth-err").textContent = "Enter your email and password.";
+        openPanel("signin");
+        return;
+      }
+      try {
+        $("do-login").disabled = true;
+        $("do-login").textContent = "Signing in…";
+        identityUser = await login(email, password);
+        paint();
+        openPanel("signin");
+      } catch (error) {
+        identityUser = null;
+        $("auth-err").textContent = authMessage(error);
+        openPanel("signin");
+      } finally {
+        $("do-login").disabled = false;
+        $("do-login").textContent = "Sign in";
+      }
+    });
+
+    $("do-out").addEventListener("click", async () => {
+      await logout();
+      identityUser = null;
+      const state = S.load();
+      state.session = null;
+      S.save(state);
+      paint();
+      openPanel("signin");
+    });
+
+    $("form-invite").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      $("invite-err").textContent = "";
+      if (!canInvite()) {
+        $("invite-err").textContent = "Authorize with the operator inbox first.";
+        return;
+      }
+      const email = S.norm($("invite").value);
+      if (!S.valid(email)) { $("invite-err").textContent = "Enter a valid email."; return; }
+      try {
+        await whitelistRequest({ method: "POST", body: { email } });
+        $("invite").value = "";
+        $("invite-ok").textContent = "Email added to the whitelist.";
+        await paintInvites();
+      } catch (error) { $("invite-err").textContent = error.message; }
+    });
+
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
+    let authCallback = null;
+    const callbackParams = new URLSearchParams(location.hash.replace(/^#/, ""));
+    const queryParams = new URLSearchParams(location.search);
+    const callbackError = callbackParams.get("error_description") || callbackParams.get("error");
+    if (callbackError) {
+      $("auth-err").textContent = callbackError === "access_denied"
+        ? "Google sign-in was cancelled."
+        : "Google sign-in could not be completed. Please try again.";
+      openPanel("signin");
+    }
+    try {
+      // This single processor handles confirmation, recovery, invitation,
+      // email-change, and OAuth callbacks and establishes the right session.
+      authCallback = await handleAuthCallback();
+      if (authCallback && authCallback.user) identityUser = authCallback.user;
+    } catch (error) {
+      $("auth-err").textContent = authMessage(error);
+    }
+    if (!identityUser) identityUser = await getUser();
+    try {
+      const settings = await getSettings();
+      $("do-google").hidden = !settings.providers.google;
+    } catch (error) {
+      // Keep unavailable providers out of the live sign-in experience.
+      $("do-google").hidden = true;
+    }
+    paint();
+    if (authCallback && authCallback.type === "oauth" && authCallback.user) {
+      $("auth-ok").textContent = "Signed in with Google.";
+      openPanel("signin");
+    }
+    if (authCallback && authCallback.type === "confirmation" && authCallback.user) {
+      $("auth-ok").textContent = "Email confirmed. You are signed in.";
+      openPanel("signin");
+    }
+    if (authCallback && authCallback.type === "email_change" && authCallback.user) {
+      $("auth-ok").textContent = "Email address confirmed and updated.";
+      openPanel("signin");
+    }
+    if (authCallback && authCallback.type === "invite" && authCallback.token) {
+      inviteToken = authCallback.token;
+      $("signed-in").classList.add("hidden");
+      $("signed-out").classList.remove("hidden");
+      $("email").value = "";
+      $("email").readOnly = true;
+      $("password").value = "";
+      $("do-register").textContent = "Create password";
+      $("auth-ok").textContent = "Create a password to accept your invitation and sign in.";
+      openPanel("signin");
+    }
+    if (authCallback && authCallback.type === "recovery") {
+      recoveryMode = true;
+      $("signed-in").classList.add("hidden");
+      $("signed-out").classList.remove("hidden");
+      $("email").value = authCallback.user && authCallback.user.email || "";
+      $("email").readOnly = true;
+      $("password").value = "";
+      $("do-register").textContent = "Save new password";
+      $("auth-ok").textContent = "Enter a new password, then save it.";
+      openPanel("signin");
+    }
+    if (location.hash) {
+      const query = queryParams.toString();
+      history.replaceState({}, "", location.pathname + (query ? "?" + query : ""));
+    }
+  </script>
+<script src="./support.js"></script>
+  <script src="./reef-bg.js"></script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+OFS Domains — TLS
+
+SSL is $0. It is not a cart add-on.
+
+After DNS ALIAS/CNAME is live, the host mints the certificate with ACME.
+Cloudflare Pages, Netlify, and GitHub Pages all do this. No CSR. No PEM upload.
+
+What we set:
+- CAA    only Let's Encrypt, Google Trust, DigiCert may issue
+- HSTS   Strict-Transport-Security, 1 year, includeSubDomains, preload
+- HTTPS  http → https 301
+- iodef  faults to the operator inbox
+
+Check:
+  https://APEX
+  padlock on Home
+  certificate subject = APEX and www.APEX

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OFS Domains — Stack + sauce</title>
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font:16px/1.5 ui-sans-serif,system-ui; background:var(--bg); color:var(--fg); }
+    header, main { max-width:760px; margin:0 auto; padding:24px 20px; }
+    nav { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 0; }
+    nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
+    nav a.on { color:var(--fg); background:var(--card); }
+    h1 { font-family:Georgia,serif; font-weight:400; letter-spacing:-.03em; }
+    .k, .lead { color:var(--muted); }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
+    .card { margin-top:14px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+    th { color:var(--muted); font-weight:500; font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="k">Parity + sauce</div>
+    <h1>Everything they ship. Plus the reef.</h1>
+    <p class="lead">Cloudflare Pages is the edge: global CDN, custom domain, TLS, redirects, headers, previews, rollbacks. OFS sits on that and sells the name, the listing, and the launch.</p>
+    <nav>
+      <a href="home.html">Home</a>
+      <a href="bundle.html">Products</a>
+      <a class="on" href="sauce.html">Sauce</a>
+      <a href="vault.html">Vault</a>
+      <a href="host.html">Host</a>
+    </nav>
+  </header>
+  <main>
+    <div class="card">
+      <div class="k">Same as Pages</div>
+      <table>
+        <tr><th>Feature</th><th>OFS</th></tr>
+        <tr><td>Global static host</td><td>Yes — Pages / your edge</td></tr>
+        <tr><td>Custom domain</td><td>Yes — claimed name</td></tr>
+        <tr><td>Auto TLS</td><td>Yes — $0</td></tr>
+        <tr><td>_redirects / _headers</td><td>Yes — in the live pack</td></tr>
+        <tr><td>HTTPS force</td><td>Yes</td></tr>
+        <tr><td>Preview URL</td><td>pages.dev until apex is live</td></tr>
+        <tr><td>Rollback</td><td>Redeploy last zip</td></tr>
+        <tr><td>Direct upload + wrangler</td><td>Yes</td></tr>
+        <tr><td>HSTS / nosniff</td><td>Yes</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="k">Secret sauce — they do not sell this</div>
+      <table>
+        <tr><th>Sauce</th><th>Why it matters</th></tr>
+        <tr><td>Web + Web3 listing · $0</td><td>One name on both rails</td></tr>
+        <tr><td>Claim $10 / OFS One $99 / Abyss One $299</td><td>Name + seat, not a $23 renewal trap</td></tr>
+        <tr><td>Name only + Host park</td><td>Keep the site you already run</td></tr>
+        <tr><td>AI Auto run</td><td>Sentence → name → site → live</td></tr>
+        <tr><td>OFS Vault</td><td>Every purchase on the seat</td></tr>
+        <tr><td>Whitelist + verify + OAuth2</td><td>Invited free seats still prove the inbox</td></tr>
+        <tr><td>Haven bind + reef plot</td><td>Deed on-chain, public plot</td></tr>
+        <tr><td>Domain Privacy $0</td><td>WHOIS stays off the street</td></tr>
+        <tr><td>Publisher rights</td><td>No remix without consent</td></tr>
+        <tr><td>Brand token (not a sale)</td><td>Name launches with a mark in Haven</td></tr>
+      </table>
+    </div>
+    <p class="lead" style="margin-top:18px">Pages is the pipe. OFS is the name, the listing, and the vault. Use both. Do not leave the official copy on grok.me.</p>
+  </main>
+  <script src="./reef-bg.js"></script>
+</body>
+</html>

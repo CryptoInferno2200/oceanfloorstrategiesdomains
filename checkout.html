@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <title>OFS Domains — Checkout</title>
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.5 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    header, main { max-width: 760px; margin: 0 auto; padding: 20px; }
+    nav { display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 0; }
+    nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
+    nav a.on { color:var(--fg); background:var(--card); }
+    h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.03em; margin: 8px 0 10px; }
+    .k, .lead { color:var(--muted); }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
+    label { display:block; font-size:12px; color:var(--muted); margin: 12px 0 6px; }
+    input, select { width:100%; height:44px; border:0; border-radius:12px; padding:0 12px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
+    .plans { display:grid; gap:10px; margin-top:8px; }
+    @media (min-width:560px) { .plans { grid-template-columns: 1fr 1fr; } }
+    .pick { text-align:left; padding:14px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); cursor:pointer; border:0; color:inherit; font: inherit; }
+    .pick.on { box-shadow:0 0 0 2px #cfe4dc; }
+    .pick strong { display:block; font-size:1.05rem; }
+    .pick .price { font-size:1.35rem; margin: 4px 0; }
+    .row { display:flex; flex-wrap:wrap; gap:8px; }
+    .row button { height:40px; border:0; border-radius:999px; padding:0 14px; background:transparent; color:var(--muted); box-shadow:0 0 0 1px var(--line); cursor:pointer; font: inherit; font-size:13px; }
+    .row button.on { color:var(--fg); background:var(--card); }
+    .card { margin-top:16px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
+    .lines { list-style:none; margin:8px 0 0; padding:0; }
+    .lines li { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; }
+    .due { font-size:1.6rem; margin: 12px 0 0; }
+    .pay { width:100%; height:48px; margin-top:16px; border:0; border-radius:12px; background:var(--fg); color:var(--bg); font-weight:600; cursor:pointer; font: inherit; }
+    .pay:disabled { opacity:.45; cursor:not-allowed; }
+    .ok { color:#cfe4dc; font-size:14px; }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="k">OFS Domains</div>
+    <h1>Checkout.</h1>
+    <p class="lead">Same number next year. Dual listing, privacy, SSL, plot, and deed stay $0.</p>
+    <nav>
+      <a href="home.html">Home</a>
+      <a href="auto.html">Auto</a>
+      <a href="bundle.html">Products</a>
+      <a class="on" href="checkout.html">Checkout</a>
+      <a href="profile.html">Profile</a>
+      <a href="vault.html">Vault</a>
+      <a href="reef.html">Reef</a>
+      <a href="bind.html">Bind</a>
+      <a href="host.html">Host</a>
+      <a href="live.html">Go live</a>
+    </nav>
+  </header>
+  <main>
+    <label for="fqdn">Name</label>
+    <input id="fqdn" value="kelpchart.com" autocomplete="off" />
+
+    <p class="k" style="margin-top:18px">Plan</p>
+    <div class="plans" id="plans"></div>
+
+    <p class="k" style="margin-top:18px">Domain Privacy Protection · $0</p>
+    <p class="lead" style="margin:8px 0 0">On by default. Street, phone, and personal inbox stay off public WHOIS. OFS is listed as the public contact.</p>
+
+    <p class="k" style="margin-top:18px">Listing · $0 extra</p>
+    <div class="row" id="listing">
+      <button type="button" data-list="both" class="on">Both</button>
+      <button type="button" data-list="web">Web</button>
+      <button type="button" data-list="web3">Web3</button>
+    </div>
+
+    <div class="card">
+      <div class="k">Receipt</div>
+      <p class="ok" id="comp" hidden>Complimentary seat. Due is $0.</p>
+      <ul class="lines" id="lines"></ul>
+      <p class="due" id="due"></p>
+      <p class="lead" id="renew"></p>
+      <button class="pay" type="button" id="pay">Pay and go live</button>
+    </div>
+  </main>
+  <script src="./mail.js"></script>
+<script src="./auth.js"></script>
+  <script src="./pricing.js"></script>
+  <script src="./purchases.js"></script>
+  <script src="./host.js"></script>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const onlyName = q.get("only") === "name";
+    const raw = onlyName ? "claim" : (q.get("bundle") || q.get("plan") || "one");
+    const state = { plan: OFSPrice.BUNDLES[raw] ? raw : "one", term: "year", listing: q.get("listing") || "both" };
+    if (q.get("fqdn")) document.getElementById("fqdn").value = q.get("fqdn");
+
+    function complimentary() {
+      if (typeof OFSSeat === "undefined") return false;
+      const s = OFSSeat.load();
+      return Boolean(s.session && OFSSeat.free(s, s.session));
+    }
+
+    function paintPlans() {
+      const box = document.getElementById("plans");
+      box.innerHTML = "";
+      (onlyName ? ["claim"] : ["claim", "one", "abyss-one"]).forEach((id) => {
+        const p = OFSPrice.BUNDLES[id];
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "pick" + (p.id === state.plan ? " on" : "");
+        b.innerHTML = "<span class='k'>" + (id === "claim" ? "Name" : "All-in-one") + "</span><strong>" + p.name + "</strong><div class='price'>" +
+          OFSPrice.money(p.year) + "<span class='k'> / year</span></div><p class='lead' style='margin:0;font-size:13px'>" + p.blurb + "</p>";
+        b.addEventListener("click", () => { state.plan = p.id; paint(); });
+        box.appendChild(b);
+      });
+    }
+
+    function paint() {
+      paintPlans();
+      document.querySelectorAll("#listing [data-list]").forEach((el) => {
+        el.classList.toggle("on", el.getAttribute("data-list") === state.listing);
+      });
+      const fqdn = document.getElementById("fqdn").value;
+      const quote = OFSPrice.quote({
+        plan: state.plan,
+        tld: OFSPrice.tldOf(fqdn),
+        listing: state.listing,
+        term: state.term,
+        complimentary: complimentary(),
+      });
+      document.getElementById("comp").hidden = !quote.complimentary;
+      document.getElementById("lines").innerHTML = quote.lines.map((l) =>
+        "<li><span>" + l.label + "</span><span>" + OFSPrice.money(l.amount) + "</span></li>"
+      ).join("");
+      document.getElementById("due").textContent = "Due " + OFSPrice.money(quote.due);
+      document.getElementById("renew").textContent = "Renews " + OFSPrice.money(quote.renewsAt) + " · " + quote.names + " name" + (quote.names === 1 ? "" : "s");
+      document.getElementById("pay").textContent = quote.due === 0 ? "Claim and go live" : "Pay " + OFSPrice.money(quote.due) + " and go live";
+      window._quote = quote;
+    }
+
+    document.getElementById("fqdn").addEventListener("input", paint);
+    document.querySelectorAll("#listing [data-list]").forEach((el) => {
+      el.addEventListener("click", () => { state.listing = el.getAttribute("data-list"); paint(); });
+    });
+    document.getElementById("pay").addEventListener("click", async () => {
+      const fqdn = (document.getElementById("fqdn").value || "kelpchart.com").trim().toLowerCase();
+      const quote = window._quote;
+      try {
+        sessionStorage.setItem("ofs.receipt", JSON.stringify({ fqdn, quote, at: Date.now() }));
+      } catch (_) {}
+      const p = new URLSearchParams({
+        fqdn,
+        listing: quote.listing,
+        bundle: quote.plan,
+        due: String(quote.due),
+        complimentary: quote.complimentary ? "1" : "0",
+      });
+      if (window.OFSHost) {
+        OFSHost.publish({ fqdn, businessName: fqdn, plan: quote.plan, listing: quote.listing, description: "Hosted after checkout." });
+      }
+      if (window.OFSPurchases) {
+        await OFSPurchases.add({
+          fqdn,
+          plan: quote.plan,
+          listing: quote.listing,
+          due: quote.due,
+          complimentary: quote.complimentary,
+          status: quote.due === 0 ? "complimentary" : "paid",
+        });
+      }
+      const stripe = (OFSPrice.STRIPE && OFSPrice.STRIPE[quote.plan]) || "";
+      if (stripe && quote.due > 0) {
+        location.href = stripe;
+        return;
+      }
+      location.href = "live.html?" + p.toString();
+    });
+    paint();
+  </script>
+<script src="./support.js"></script>
+  <script src="./reef-bg.js"></script>
+</body>
+</html>

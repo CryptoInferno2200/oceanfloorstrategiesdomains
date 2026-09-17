@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <title>OFS Domains — Products</title>
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.5 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    header, main { max-width: 920px; margin: 0 auto; padding: 24px 20px; }
+    nav { display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 0; }
+    nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
+    nav a.on { color:var(--fg); background:var(--card); }
+    h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.03em; margin: 8px 0 10px; }
+    h2 { font-family: Georgia, serif; font-weight:400; margin: 6px 0; }
+    .k, .lead { color:var(--muted); }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
+    .grid { display:grid; gap:12px; margin-top:20px; }
+    @media (min-width:800px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+    .card { display:flex; flex-direction:column; padding:18px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
+    .card.on { box-shadow:0 0 0 2px #cfe4dc; }
+    .price { font-size:2rem; margin: 8px 0; }
+    ul { margin:8px 0 16px; padding-left:18px; color:var(--muted); font-size:14px; flex:1; }
+    a.btn, button.btn {
+      display:block; text-align:center; height:44px; line-height:44px; border:0; border-radius:12px;
+      background:var(--fg); color:var(--bg); font-weight:600; text-decoration:none; cursor:pointer; font: inherit;
+    }
+    a.ghost { background:transparent; color:var(--fg); box-shadow:0 0 0 1px var(--line); }
+    .notes { display:grid; gap:12px; margin-top:20px; }
+    @media (min-width:640px) { .notes { grid-template-columns: 1fr 1fr; } }
+    .notes .card { padding:14px; }
+    .notes p { margin: 8px 0 0; }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="k">Products</div>
+    <h1>Claim the name. Or take the year and the seat.</h1>
+    <p class="lead">Register equals renew. Both listings $0. Privacy and SSL $0. Complimentary seats pay $0 at checkout.</p>
+    <nav>
+      <a href="home.html">Home</a>
+      <a href="auto.html">Auto</a>
+      <a class="on" href="bundle.html">Products</a>
+      <a href="checkout.html">Checkout</a>
+      <a href="profile.html">Profile</a>
+      <a href="vault.html">Vault</a>
+      <a href="reef.html">Reef</a>
+      <a href="bind.html">Bind</a>
+      <a href="host.html">Host</a>
+      <a href="live.html">Go live</a>
+    </nav>
+  </header>
+  <main>
+    <div class="grid" id="products"></div>
+    <div class="notes">
+      <article class="card">
+        <div class="k">Checkout</div>
+        <p>Already have a website? Use <a href="name.html">Name only · $10</a>. It skips builder, host, and profile. Checkout writes the receipt for everyone else.</p>
+      </article>
+      <article class="card">
+        <div class="k">Never on the cart</div>
+        <p>Dual listing. WHOIS privacy. SSL. Plot. Deed. Bind. Protect-your-domain add-ons. Brand-token mint.</p>
+      </article>
+    </div>
+  </main>
+  <script src="./pricing.js"></script>
+  <script>
+    const ORDER = ["claim", "one", "abyss-one"];
+    const box = document.getElementById("products");
+    ORDER.forEach((id, i) => {
+      const p = OFSPrice.BUNDLES[id];
+      const art = document.createElement("article");
+      art.className = "card" + (id === "one" ? " on" : "");
+      art.innerHTML =
+        "<div class='k'>" + (id === "claim" ? "Name only" : id === "one" ? "Most names" : "Studios") + "</div>" +
+        "<h2>" + p.name + "</h2>" +
+        "<p class='price'>" + OFSPrice.money(p.year) + "<span class='k'> / year</span></p>" +
+        "<ul>" + (p.includes || []).map((x) => "<li>" + x + "</li>").join("") + "</ul>" +
+        "<a class='btn" + (id === "claim" || id === "one" ? "" : " ghost") + "' href='checkout.html?bundle=" + id + "&listing=both'>Checkout · " + OFSPrice.money(p.year) + "</a>";
+      box.appendChild(art);
+    });
+  </script>
+<script src="./mail.js"></script>
+<script src="./support.js"></script>
+  <script src="./reef-bg.js"></script>
+</body>
+</html>

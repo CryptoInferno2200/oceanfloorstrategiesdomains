@@ -1,0 +1,27 @@
+; OFS Domains — zone template
+; Replace HOST with your Pages hostname (example: ofs-domains.pages.dev)
+; Cloudflare Pages custom domain uses CNAME flattening on the apex.
+; Replace APEX with the claimed name (example: kelpchart.com)
+; TTL 300 while you cut over, then 3600.
+
+$TTL 300
+@     IN  ALIAS  HOST.
+www   IN  CNAME  HOST.
+
+; Dual listing. Same letters. Do not invent a new TLD.
+_ofs1 IN  TXT    "v=OFS1; listing=both; wallet=haven"
+_ens  IN  TXT    "ens-name=APEX"
+
+; Mail. Operator inbox until you change it.
+@     IN  TXT    "v=spf1 include:_spf.google.com ~all"
+_dmarc IN TXT    "v=DMARC1; p=quarantine; rua=mailto:oceanfloorstrategies2200@gmail.com"
+
+; TLS. The host issues the cert (Let's Encrypt / Google Trust / Cloudflare).
+; CAA locks who may mint. ACME HTTP-01 is answered at the host. No PEM to paste.
+@     IN  CAA  0 issue "letsencrypt.org"
+@     IN  CAA  0 issue "pki.goog"
+@     IN  CAA  0 issue "digicert.com"
+@     IN  CAA  0 issuewild "letsencrypt.org"
+@     IN  CAA  0 iodef "mailto:oceanfloorstrategies2200@gmail.com"
+
+; HTTPS is terminated at the host. No nameserver panel after this file is saved.

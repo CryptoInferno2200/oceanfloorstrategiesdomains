@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <title>OFS Domains — Go live</title>
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.82); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.45 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    header, main { max-width: 720px; margin: 0 auto; padding: 24px 20px; }
+    nav { display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 0; }
+    nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
+    nav a.on { color:var(--fg); background:var(--card); }
+    h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.03em; }
+    .k, .lead { color:var(--muted); }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
+    .card { margin-top:16px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
+    ul { margin:8px 0 0; padding-left:18px; color:var(--muted); }
+    a.btn { display:inline-block; margin-top:12px; margin-right:8px; padding:12px 16px; border-radius:12px; background:var(--fg); color:var(--bg); text-decoration:none; font-weight:600; }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="k">Go live</div>
+    <h1 id="title">kelpchart.com</h1>
+    <p class="lead" id="sub">Receipt for this name.</p>
+    <nav>
+      <a href="home.html">Home</a>
+      <a href="auto.html">Auto</a>
+      <a href="bundle.html">Products</a>
+      <a href="checkout.html">Checkout</a>
+      <a href="profile.html">Profile</a>
+      <a href="vault.html">Vault</a>
+      <a href="reef.html">Reef</a>
+      <a href="bind.html">Bind</a>
+      <a href="host.html">Host</a>
+      <a class="on" href="live.html">Go live</a>
+    </nav>
+  </header>
+  <main>
+    <div class="card">
+      <div class="k">On this receipt</div>
+      <ul id="list"></ul>
+      <a class="btn" id="toHost" href="site.html">Publish on OFS Host</a>
+      <a class="btn" id="toReef" href="reef.html">Open plot</a>
+      <a class="btn" id="toBind" href="bind.html" style="background:transparent;color:var(--fg);box-shadow:0 0 0 1px var(--line)">Bind Haven</a>
+    </div>
+  </main>
+  <script src="./purchases.js"></script>
+  <script src="./host.js"></script>
+  <script>
+    const q = new URLSearchParams(location.search);
+    const fqdn = (q.get("fqdn") || "kelpchart.com").toLowerCase();
+    const listing = q.get("listing") || "both";
+    const name = q.get("businessName") || fqdn;
+    document.getElementById("title").textContent = fqdn;
+    const due = q.get("due");
+    const comp = q.get("complimentary") === "1";
+    const bundle = q.get("bundle") || "";
+    document.getElementById("sub").textContent = name + " · listing " + listing + " · $0 extra" + (comp ? " · complimentary" : "");
+    const rows = [];
+    if (bundle) {
+      const label = bundle === "abyss-one" ? "OFS Abyss One" : bundle === "one" ? "OFS One" : bundle === "claim" ? "Claim" : bundle;
+      rows.push(label + (due != null ? " · due $" + due : ""));
+    }
+    rows.push(fqdn + " year (ICANN)");
+    rows.push("Listing " + listing + " · $0 extra");
+    rows.push("Domain Privacy Protection · $0");
+    if (listing !== "web3") rows.push("Hosted at site.html?n=" + fqdn);
+    if (listing !== "web") {
+      rows.push("Name deed in Haven");
+      rows.push("Reef plot /reef/" + fqdn);
+    }
+    if (q.get("brandToken") !== "false" && listing !== "web") rows.push("Brand token to Haven (not a sale)");
+    document.getElementById("list").innerHTML = rows.map((r) => "<li>" + r + "</li>").join("");
+    const carry = "?fqdn=" + encodeURIComponent(fqdn);
+    document.getElementById("toReef").href = "reef.html" + carry;
+    document.getElementById("toBind").href = "bind.html" + carry;
+    if (typeof OFSPurchases !== "undefined") {
+      OFSPurchases.add({ fqdn, plan: bundle || "claim", listing, due: due == null ? 0 : Number(due), complimentary: comp });
+    }
+    if (typeof OFSHost !== "undefined") {
+      OFSHost.publish({ fqdn, businessName: name, plan: bundle || "claim", listing });
+      const hostBtn = document.getElementById("toHost");
+      if (hostBtn) hostBtn.href = OFSHost.path(fqdn);
+    }
+    document.querySelectorAll("nav a").forEach((a) => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        location.href = a.getAttribute("href").split("?")[0] + carry;
+      });
+    });
+  </script>
+<script src="./mail.js"></script>
+<script src="./support.js"></script>
+  <script src="./reef-bg.js"></script>
+</body>
+</html>

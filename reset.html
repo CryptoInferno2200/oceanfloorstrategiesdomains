@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <title>OFS Domains — Reset password</title>
+  <link rel="icon" href="./icon.svg" />
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.5 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    main { max-width: 28rem; margin: 12vh auto; padding: 24px 20px; }
+    h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.03em; margin: 8px 0 12px; }
+    p { margin: 0 0 12px; }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+    .lead, label { color:var(--muted); }
+    label { display:block; font-size:12px; margin: 12px 0 6px; }
+    input { width:100%; height:44px; border:0; border-radius:12px; padding:0 12px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
+    button { width:100%; height:48px; margin-top:16px; border:0; border-radius:12px; background:var(--fg); color:var(--bg); font-weight:600; cursor:pointer; font: inherit; }
+    .err { color:#e0b7b0; }
+    a { color:var(--fg); }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="k">OFS Domains</p>
+    <h1 id="title">Set a new password</h1>
+    <p class="lead" id="msg">The reset token stays in the link. It is one use and dies in 20 minutes.</p>
+    <form id="form">
+      <label for="password">New password</label>
+      <input id="password" type="password" required minlength="8" autocomplete="new-password" />
+      <label for="again">Again</label>
+      <input id="again" type="password" required minlength="8" autocomplete="new-password" />
+      <button type="submit">Save password</button>
+    </form>
+    <p class="err" id="err"></p>
+    <p><a href="home.html">Back to home</a></p>
+  </main>
+  <script src="./mail.js"></script>
+  <script src="./auth.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const email = OFSSeat.norm(params.get("e") || "");
+    const token = String(params.get("t") || "").trim();
+    if (!OFSSeat.valid(email) || token.length < 32) {
+      document.getElementById("title").textContent = "Link is incomplete.";
+      document.getElementById("form").hidden = true;
+      document.getElementById("msg").textContent = "Ask for a new reset from Sign in.";
+    }
+    document.getElementById("form").onsubmit = async (e) => {
+      e.preventDefault();
+      const pass = document.getElementById("password").value;
+      const again = document.getElementById("again").value;
+      document.getElementById("err").textContent = "";
+      if (pass !== again) { document.getElementById("err").textContent = "Passwords do not match."; return; }
+      const result = await OFSSeat.consumeReset(email, token, pass);
+      if (!result.ok) { document.getElementById("err").textContent = result.error; return; }
+      history.replaceState({}, "", "reset.html");
+      document.getElementById("form").hidden = true;
+      document.getElementById("title").textContent = "Password saved.";
+      document.getElementById("msg").textContent = "That inbox can sign in with the new password.";
+    };
+  </script>
+  <script src="./support.js"></script>
+</body>
+</html>

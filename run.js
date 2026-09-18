@@ -38,9 +38,7 @@
   }
 
   function complimentary() {
-    if (typeof OFSSeat === "undefined") return false;
-    const s = OFSSeat.load();
-    return Boolean(s.session && OFSSeat.free(s, s.session));
+    return false;
   }
 
   function run(opts) {

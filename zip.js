@@ -2,6 +2,10 @@
 (function (root) {
   const DB = "ofs.domains.zip.v1";
   const STORE = "projects";
+  const MAX_ARCHIVE_BYTES = 25 * 1024 * 1024;
+  const MAX_FILES = 500;
+  const MAX_FILE_BYTES = 5 * 1024 * 1024;
+  const MAX_TOTAL_BYTES = 25 * 1024 * 1024;
 
   function openDb() {
     return new Promise((resolve, reject) => {
@@ -53,22 +57,32 @@
 
   async function unpack(file) {
     if (!root.JSZip) throw new Error("Zip engine is not loaded.");
+    if (!file || file.size > MAX_ARCHIVE_BYTES) throw new Error("Archive must be 25 MB or smaller.");
     const zip = await root.JSZip.loadAsync(file);
     const files = [];
     const names = [];
     const jobs = [];
     zip.forEach((path, entry) => {
       if (entry.dir) return;
+      if (names.length >= MAX_FILES) throw new Error("Archive contains more than 500 files.");
+      if (!path || path.includes("\0") || path.startsWith("/") || path.split("/").includes("..")) {
+        throw new Error("Archive contains an unsafe file path.");
+      }
+      const declaredBytes = Number(entry._data && entry._data.uncompressedSize || 0);
+      if (declaredBytes > MAX_FILE_BYTES) throw new Error("An archived file is larger than 5 MB.");
       names.push(path);
       jobs.push(
         entry.async("string").then((text) => {
-          files.push({ path, text, bytes: text.length });
-        }).catch(() => {
-          files.push({ path, text: "", bytes: 0, binary: true });
+          const bytes = new TextEncoder().encode(text).byteLength;
+          if (bytes > MAX_FILE_BYTES) throw new Error("An archived file is larger than 5 MB.");
+          files.push({ path, text, bytes });
         }),
       );
     });
     await Promise.all(jobs);
+    if (files.reduce((sum, item) => sum + item.bytes, 0) > MAX_TOTAL_BYTES) {
+      throw new Error("Expanded archive must be 25 MB or smaller.");
+    }
     files.sort((a, b) => a.path.localeCompare(b.path));
     return {
       name: String(file.name || "project.zip").replace(/\.zip$/i, ""),

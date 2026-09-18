@@ -18,6 +18,10 @@
     label { display:block; font-size:12px; margin: 12px 0 6px; }
     input { width:100%; height:44px; border:0; border-radius:12px; padding:0 12px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
     button { width:100%; height:48px; margin-top:16px; border:0; border-radius:12px; background:var(--fg); color:var(--bg); font-weight:600; cursor:pointer; font: inherit; }
+    .password-control { display:flex; justify-content:flex-end; }
+    .password-toggle { width:auto; height:auto; margin-top:7px; padding:4px 2px; background:transparent; color:var(--muted); font-weight:400; font-size:12px; }
+    .password-toggle:hover { color:var(--fg); }
+    .password-toggle:focus-visible { outline:2px solid #cfe4dc; outline-offset:3px; }
     .err { color:#e0b7b0; }
     a { color:var(--fg); }
   </style>
@@ -32,6 +36,7 @@
       <input id="password" type="password" required minlength="8" autocomplete="new-password" />
       <label for="again">Again</label>
       <input id="again" type="password" required minlength="8" autocomplete="new-password" />
+      <div class="password-control"><button class="password-toggle" type="button" id="toggle-passwords" aria-controls="password again" aria-pressed="false">Show passwords</button></div>
       <button type="submit">Save password</button>
     </form>
     <p class="err" id="err"></p>
@@ -48,6 +53,13 @@
       document.getElementById("form").hidden = true;
       document.getElementById("msg").textContent = "Ask for a new reset from Sign in.";
     }
+    document.getElementById("toggle-passwords").addEventListener("click", (event) => {
+      const fields = [document.getElementById("password"), document.getElementById("again")];
+      const reveal = fields[0].type === "password";
+      fields.forEach((field) => { field.type = reveal ? "text" : "password"; });
+      event.currentTarget.textContent = reveal ? "Hide passwords" : "Show passwords";
+      event.currentTarget.setAttribute("aria-pressed", String(reveal));
+    });
     document.getElementById("form").onsubmit = async (e) => {
       e.preventDefault();
       const pass = document.getElementById("password").value;

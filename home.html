@@ -110,6 +110,10 @@
     .card { padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
     label { display:block; font-size:12px; color:var(--muted); margin: 10px 0 6px; }
     input { width:100%; height:44px; border:0; border-radius:12px; padding:0 12px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
+    .password-control { display:flex; justify-content:flex-end; margin-top:7px; }
+    .password-toggle { border:0; padding:4px 2px; background:transparent; color:var(--muted); font:inherit; font-size:12px; cursor:pointer; }
+    .password-toggle:hover { color:var(--fg); }
+    .password-toggle:focus-visible { outline:2px solid #cfe4dc; outline-offset:3px; border-radius:4px; }
     .err { color:#e0b7b0; font-size:13px; margin-top:8px; }
     .ok { color:#cfe4dc; font-size:13px; margin-top:8px; }
     .list { list-style:none; margin:10px 0 0; padding:0; display:grid; gap:8px; }
@@ -141,8 +145,12 @@
           <form id="form-register">
             <label for="email">Email</label>
             <input id="email" type="email" required autocomplete="username" />
+            <label for="email-confirm">Confirm email <span aria-hidden="true">·</span> new accounts</label>
+            <input id="email-confirm" type="email" autocomplete="email" aria-describedby="email-confirm-note" />
+            <span class="hidden" id="email-confirm-note">Re-enter your email when creating a new account.</span>
             <label for="password">Password</label>
             <input id="password" type="password" required minlength="8" autocomplete="current-password" />
+            <div class="password-control"><button class="password-toggle" type="button" id="toggle-password" aria-controls="password" aria-pressed="false">Show password</button></div>
             <div class="row" style="margin-top:12px">
               <button class="btn" type="submit" id="do-register">Create account</button>
               <button class="btn ghost" type="button" id="do-login">Sign in</button>
@@ -645,6 +653,7 @@
       $("auth-err").textContent = "";
       $("auth-ok").textContent = "";
       const email = S.norm($("email").value);
+      const emailConfirm = S.norm($("email-confirm").value);
       const password = $("password").value;
       if (password.length < 8) { $("auth-err").textContent = "Password needs 8 characters."; return; }
       try {
@@ -669,6 +678,8 @@
           openPanel("signin");
           return;
         }
+        if (!emailConfirm) { $("auth-err").textContent = "Confirm your email to create an account."; return; }
+        if (email !== emailConfirm) { $("auth-err").textContent = "Email addresses do not match."; return; }
         const user = await signup(email, password);
         if (user.confirmedAt) {
           identityUser = user;
@@ -680,6 +691,14 @@
         $("auth-err").textContent = authMessage(error);
         openPanel("signin");
       }
+    });
+
+    $("toggle-password").addEventListener("click", () => {
+      const password = $("password");
+      const reveal = password.type === "password";
+      password.type = reveal ? "text" : "password";
+      $("toggle-password").textContent = reveal ? "Hide password" : "Show password";
+      $("toggle-password").setAttribute("aria-pressed", String(reveal));
     });
 
     $("do-google").addEventListener("click", () => {

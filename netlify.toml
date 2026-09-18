@@ -19,6 +19,21 @@
   to = "/home.html"
   status = 200
 
+[[redirects]]
+  from = "/oauth.html"
+  to = "/home.html"
+  status = 301
+
+[[redirects]]
+  from = "/verify.html"
+  to = "/home.html"
+  status = 301
+
+[[redirects]]
+  from = "/reset.html"
+  to = "/home.html"
+  status = 301
+
 [[headers]]
   for = "/*"
   [headers.values]
@@ -26,6 +41,8 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' https://esm.sh https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://esm.sh https://formsubmit.co https://oauth2.googleapis.com; frame-src blob:; form-action 'self' https://buy.stripe.com; worker-src 'self' blob:; upgrade-insecure-requests"
 
 [[headers]]
   for = "/home.html"

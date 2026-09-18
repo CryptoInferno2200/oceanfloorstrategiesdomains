@@ -1,4 +1,4 @@
-const CACHE = "ofs-domains-v24";
+const CACHE = "ofs-domains-v25";
 const PRECACHE = [
   "./home.html",
   "./auto.html",
@@ -32,6 +32,23 @@ const PRECACHE = [
   "./support.js",
   "./sync.js",
   "./zip.js",
+  "./assets/js/auto-inline-1.js",
+  "./assets/js/bind-inline-1.js",
+  "./assets/js/bundle-inline-1.js",
+  "./assets/js/checkout-inline-1.js",
+  "./assets/js/drop-inline-1.js",
+  "./assets/js/home-inline-1.js",
+  "./assets/js/host-inline-1.js",
+  "./assets/js/index-inline-1.js",
+  "./assets/js/live-inline-1.js",
+  "./assets/js/name-inline-1.js",
+  "./assets/js/oauth-inline-1.js",
+  "./assets/js/profile-inline-1.js",
+  "./assets/js/reef-inline-1.js",
+  "./assets/js/reset-inline-1.js",
+  "./assets/js/site-inline-1.js",
+  "./assets/js/vault-inline-1.js",
+  "./assets/js/verify-inline-1.js",
   "./reef-bg.css",
   "./manifest.webmanifest",
   "./icon.svg",
@@ -48,6 +65,7 @@ self.addEventListener("activate", (e) => {
 });
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
+  if (e.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
   if (url.pathname.endsWith(".html") || url.pathname === "/") {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
     return;

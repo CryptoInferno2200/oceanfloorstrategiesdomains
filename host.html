@@ -64,27 +64,7 @@
     </div>
   </main>
   <script src="./host.js"></script>
-  <script>
-    function paint() {
-      const rows = OFSHost.load();
-      document.getElementById("list").innerHTML = rows.length
-        ? rows.map((s) => "<li><span>" + s.fqdn + "<br><span class='k'>" + s.plan + " · TLS</span></span><a href='" + s.route + "'>Open site</a></li>").join("")
-        : "<li>No names hosted yet.</li>";
-    }
-    document.getElementById("form").onsubmit = (e) => {
-      e.preventDefault();
-      const out = OFSHost.publish({
-        fqdn: document.getElementById("fqdn").value,
-        businessName: document.getElementById("businessName").value,
-        description: document.getElementById("description").value,
-        plan: "claim",
-        listing: "both",
-      });
-      if (out.ok) location.href = out.site.route;
-    };
-    OFSHost.seed();
-    paint();
-  </script>
+  <script src="./assets/js/host-inline-1.js"></script>
   <script src="./mail.js"></script>
   <script src="./support.js"></script>
   <script src="./reef-bg.js"></script>

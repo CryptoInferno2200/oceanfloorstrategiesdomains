@@ -54,21 +54,7 @@
   </main>
   <script src="./auth.js"></script>
   <script src="./purchases.js"></script>
-  <script>
-    const seat = OFSSeat.load().session;
-    document.getElementById("who").textContent = seat ? ("Vault for " + seat) : "Vault on this device. Sign in on Home to attach a seat.";
-    const rows = OFSPurchases.forAccount();
-    document.getElementById("history").innerHTML = rows.length
-      ? rows.map((r) => {
-          const pay = r.complimentary || r.due === 0 ? "complimentary" : "$" + Number(r.due).toFixed(2);
-          return "<li>" + r.label + " · " + (r.fqdn || "—") + " · " + pay + " · " + new Date(r.at).toLocaleString() + "</li>";
-        }).join("")
-      : "<li>Vault is empty until a name is claimed or a plan is paid.</li>";
-    const invited = OFSSeat.listWhitelist ? OFSSeat.listWhitelist() : [];
-    document.getElementById("white-list").innerHTML = invited.length
-      ? invited.map((r) => "<li>" + r.email + " · " + r.status + (r.operator ? " · operator" : "") + "</li>").join("")
-      : "<li>No whitelist emails yet.</li>";
-  </script>
+  <script src="./assets/js/vault-inline-1.js"></script>
   <script src="./mail.js"></script>
   <script src="./support.js"></script>
   <script src="./reef-bg.js"></script>

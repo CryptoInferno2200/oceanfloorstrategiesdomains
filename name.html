@@ -60,36 +60,7 @@
   <script src="./pricing.js"></script>
   <script src="./host.js"></script>
   <script src="./purchases.js"></script>
-  <script>
-    document.getElementById("form").onsubmit = (e) => {
-      e.preventDefault();
-      const fqdn = document.getElementById("fqdn").value.trim().toLowerCase();
-      const free = typeof OFSSeat !== "undefined" && (function () {
-        const s = OFSSeat.load();
-        return Boolean(s.session && OFSSeat.free(s, s.session));
-      })();
-      const quote = OFSPrice.quote({ bundle: "claim", fqdn, listing: "both", complimentary: free });
-      if (window.OFSPurchases) {
-        OFSPurchases.add({ fqdn: quote.parsed.fqdn, plan: "claim", listing: "both", due: free ? 0 : quote.due, complimentary: free });
-      }
-      OFSHost.publish({
-        fqdn: quote.parsed.fqdn,
-        businessName: quote.parsed.fqdn,
-        description: "Name-only. Point this name at the site you already run, or use the OFS host page.",
-        plan: "claim",
-        listing: "both",
-      });
-      const hosted = OFSHost.path(quote.parsed.fqdn);
-      const stripe = OFSPrice.STRIPE.claim;
-      if (free || quote.due === 0) {
-        location.href = "live.html?fqdn=" + encodeURIComponent(quote.parsed.fqdn) + "&listing=both&bundle=claim&due=0&complimentary=1&only=name";
-        return;
-      }
-      sessionStorage.setItem("ofs.domains.next.host", hosted);
-      if (stripe) { location.href = stripe; return; }
-      location.href = "checkout.html?bundle=claim&listing=both&only=name&fqdn=" + encodeURIComponent(quote.parsed.fqdn);
-    };
-  </script>
+  <script src="./assets/js/name-inline-1.js"></script>
   <script src="./mail.js"></script>
   <script src="./support.js"></script>
   <script src="./reef-bg.js"></script>

@@ -1,5 +1,7 @@
-import type { Config } from "@netlify/functions";
+import type { Config, Context } from "@netlify/functions";
 import OpenAI from "openai";
+import { getUser } from "@netlify/identity";
+import { getDatabase } from "@netlify/database";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -12,8 +14,32 @@ function json(body: unknown, status = 200) {
   });
 }
 
-export default async (req: Request) => {
+async function identityHash(value: string) {
+  const bytes = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+export default async (req: Request, context: Context) => {
   if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
+  const length = Number(req.headers.get("content-length") || 0);
+  if (length > 15000) return json({ error: "Request is too large." }, 413);
+  const origin = req.headers.get("origin");
+  if (origin && origin !== new URL(req.url).origin) return json({ error: "Request origin is not allowed." }, 403);
+
+  const user = await getUser();
+  const identity = await identityHash(String(user?.email || context.ip || "unknown").trim().toLowerCase());
+  const limit = user ? 60 : 20;
+  const bucket = new Date();
+  bucket.setUTCMinutes(0, 0, 0);
+  const db = getDatabase();
+  const [usage] = await db.sql`
+    INSERT INTO ai_rate_limits (identity_key, window_start, request_count)
+    VALUES (${identity}, ${bucket.toISOString()}, 1)
+    ON CONFLICT (identity_key, window_start)
+    DO UPDATE SET request_count = ai_rate_limits.request_count + 1
+    RETURNING request_count
+  `;
+  if (Number(usage?.request_count || 0) > limit) return json({ error: "Build Desk limit reached. Try again later." }, 429);
 
   let body: { messages?: ChatMessage[] };
   try {

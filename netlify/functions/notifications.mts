@@ -2,7 +2,6 @@ import type { Config } from "@netlify/functions";
 import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
 
-const OPERATOR = "oceanfloorstrategies2200@gmail.com";
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
 const clean = (value: unknown, max: number) => String(value || "").trim().slice(0, max);
 
@@ -11,6 +10,8 @@ export default async (request: Request) => {
   const email = normalize(user?.email);
   if (!email) return Response.json({ error: "Sign in to view notifications." }, { status: 401 });
   const db = getDatabase();
+  const [permission] = await db.sql`SELECT role FROM identity_roles WHERE email = ${email} AND role = 'operator'`;
+  const isOperator = Boolean(permission);
 
   if (request.method === "GET") {
     const [updates, renewals] = await Promise.all([
@@ -29,11 +30,11 @@ export default async (request: Request) => {
         LIMIT 50
       `,
     ]);
-    return Response.json({ updates, renewals, canBroadcast: email === OPERATOR });
+    return Response.json({ updates, renewals, canBroadcast: isOperator });
   }
 
   if (request.method === "POST") {
-    if (email !== OPERATOR) return Response.json({ error: "Operator access required." }, { status: 403 });
+    if (!isOperator) return Response.json({ error: "Operator access required." }, { status: 403 });
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
     const title = clean(body.title, 100);
     const message = clean(body.message, 1000);

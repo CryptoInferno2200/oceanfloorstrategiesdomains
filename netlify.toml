@@ -53,3 +53,13 @@
   for = "/sw.js"
   [headers.values]
     Cache-Control = "no-cache"
+
+[[redirects]]
+  from = "/reef.html"
+  to = "/vault.html"
+  status = 301
+
+[[redirects]]
+  from = "/reef"
+  to = "/vault.html"
+  status = 301

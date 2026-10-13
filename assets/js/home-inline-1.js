@@ -436,6 +436,12 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
         $("do-login").disabled = true;
         $("do-login").textContent = "Signing in…";
         identityUser = await login(email, password);
+        const next = returnTo();
+        if (next) {
+          try { sessionStorage.removeItem("ofs.domains.next"); } catch (_) {}
+          location.href = next;
+          return;
+        }
         await refreshEntitlement();
         paint();
         openPanel("signin");
@@ -477,6 +483,17 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
         await paintInvites();
       } catch (error) { $("invite-err").textContent = error.message; }
     });
+
+    // Pages like Sauce send visitors here with ?signin=1&next=sauce.html and get them back after sign-in.
+    function returnTo() {
+      let next = new URLSearchParams(location.search).get("next") || "";
+      // Google sign-in drops the query string on its way back, so remember the destination.
+      try {
+        if (next) sessionStorage.setItem("ofs.domains.next", next);
+        else next = sessionStorage.getItem("ofs.domains.next") || "";
+      } catch (_) {}
+      return /^[a-z0-9-]+\.html$/.test(next) ? next : "";
+    }
 
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js");
     let authCallback = null;
@@ -541,6 +558,13 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       $("auth-ok").textContent = "Enter a new password, then save it.";
       openPanel("signin");
     }
+    const cameBack = authCallback && (authCallback.type === "oauth" || authCallback.type === "confirmation");
+    if (identityUser && (queryParams.get("next") || cameBack) && returnTo()) {
+      const next = returnTo();
+      try { sessionStorage.removeItem("ofs.domains.next"); } catch (_) {}
+      location.replace(next);
+    }
+    if (queryParams.get("signin") === "1" && !identityUser) openPanel("signin");
     if (location.hash) {
       const query = queryParams.toString();
       history.replaceState({}, "", location.pathname + (query ? "?" + query : ""));

@@ -133,13 +133,12 @@
     <div class="account" id="account">
       <div class="tabs">
         <button type="button" id="tab-signin" aria-expanded="false">Sign in</button>
-        <button type="button" id="tab-whitelist" aria-expanded="false">Whitelist</button>
         <button type="button" id="tab-notifications" class="hidden" aria-expanded="false">Notifications</button>
       </div>
       <div class="panel" id="panel-signin" hidden>
         <div id="signed-out">
           <p class="k">Seat</p>
-          <p class="lead" style="margin:8px 0 0;font-size:14px">Create an account, confirm your email, and sign in securely. Whitelisted inboxes also receive a complimentary seat.</p>
+          <p class="lead" style="margin:8px 0 0;font-size:14px">Create an account, confirm your email, and sign in securely.</p>
           <form id="form-register">
             <label for="email">Email</label>
             <input id="email" type="email" required autocomplete="username" />
@@ -165,24 +164,9 @@
           <p class="lead" id="seat-note" style="margin:8px 0 0;font-size:14px"></p>
           <p class="k" style="margin-top:14px">Vault</p>
           <ul class="list" id="buy-list"></ul>
-          <p class="k" style="margin-top:14px">Whitelist</p>
-          <ul class="list" id="profile-white"></ul>
           <a class="btn ghost" href="profile.html" style="margin-top:12px;width:100%;text-align:center">Open full profile</a>
           <button class="btn ghost" type="button" id="do-out" style="margin-top:12px;width:100%">Sign out</button>
         </div>
-      </div>
-      <div class="panel" id="panel-whitelist" hidden>
-        <p class="k">Whitelist</p>
-        <p class="lead" style="margin:8px 0 0;font-size:14px">Invited inboxes get a free seat. They still create a password and verify that inbox.</p>
-        <p class="lead" id="whitelist-access" style="margin:8px 0 0;font-size:14px">Sign in with the operator account to manage invited inboxes.</p>
-        <form id="form-invite" class="hidden">
-          <label for="invite">Invite email</label>
-          <input id="invite" type="email" required placeholder="name@studio.com" />
-          <button class="btn" type="submit" style="margin-top:12px;width:100%">Add free seat</button>
-        </form>
-        <p class="err" id="invite-err"></p>
-        <p class="ok" id="invite-ok"></p>
-        <ul class="list" id="invite-list"></ul>
       </div>
       <div class="panel" id="panel-notifications" hidden>
         <p class="k">Notifications</p>
@@ -262,10 +246,6 @@
       <article class="card">
         <div class="k">Application</div>
         <p>Install this page. Auto launch, profile, reef, and live receipt stay on the phone.</p>
-      </article>
-      <article class="card">
-        <div class="k">Free seats</div>
-        <p>Creator plus invited inboxes only. Everyone else pays the year. Invites still set a password and verify.</p>
       </article>
       <article class="card">
         <div class="k">All-in-one</div>

@@ -10,10 +10,3 @@ const seat = OFSSeat.load().session;
     document.getElementById("history").replaceChildren(...historyValues.map((value) => {
       const row = document.createElement("li"); row.textContent = value; return row;
     }));
-    const invited = OFSSeat.listWhitelist ? OFSSeat.listWhitelist() : [];
-    const inviteValues = invited.length
-      ? invited.map((r) => r.email + " · " + r.status + (r.operator ? " · operator" : ""))
-      : ["No whitelist emails yet."];
-    document.getElementById("white-list").replaceChildren(...inviteValues.map((value) => {
-      const row = document.createElement("li"); row.textContent = value; return row;
-    }));

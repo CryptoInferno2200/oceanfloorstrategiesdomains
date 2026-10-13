@@ -6,10 +6,7 @@ Live host to replace: https://oceanfloorstrategiesdomains.grok.me
 
 ## On Home (top right)
 - Sign in
-- Whitelist (always visible)
-- Unlock backdoor with operator inbox
-- Add invited emails
-- Invite still sets password
+- Notifications (signed in)
 - Finish verification in-app (no mail server on this build)
 
 ## Products / Checkout

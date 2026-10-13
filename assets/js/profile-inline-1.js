@@ -42,6 +42,7 @@ const COMPLETE = ["fqdn","businessName","logoUrl","description","displayName","t
       };
       function paintWhite() {
         const white = document.getElementById("white-list");
+        if (!white) return;
         const sync = document.getElementById("white-sync");
         const state = window.OFSSeat ? OFSSeat.load() : { whitelist: [], syncedAt: "" };
         const invited = window.OFSSeat ? OFSSeat.listWhitelist() : [];

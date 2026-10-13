@@ -4,7 +4,7 @@
   const ERR = "ofs.domains.sync.err.v1";
 
   const SOURCES = [
-    { id: "seat", name: "Whitelist", blurb: "Invited inboxes and operator seat." },
+    { id: "seat", name: "Seat", blurb: "Account seat." },
     { id: "vault", name: "Vault", blurb: "Purchase history for this seat." },
     { id: "host", name: "Host", blurb: "Names published on this project." },
     { id: "profile", name: "Profile", blurb: "Launch kit fields." },

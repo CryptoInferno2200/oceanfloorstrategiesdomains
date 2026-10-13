@@ -58,6 +58,15 @@
     try { localStorage.setItem("ofs.domains.receipt.v1", JSON.stringify({ fqdn, bundle: plan, listing, due: quote.due, complimentary: free, paidAt: new Date().toISOString() })); } catch (_) {}
     if (typeof OFSHost !== "undefined") OFSHost.publish({ fqdn, businessName, logoUrl, description, plan, listing });
     if (typeof OFSPurchases !== "undefined") OFSPurchases.add({ fqdn, plan, listing, due: quote.due, complimentary: free });
+    try {
+      // Saves the project to the signed-in account; guests keep the local copy only.
+      fetch("/api/projects", {
+        method: "POST",
+        keepalive: true,
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ fqdn, name: businessName, description, plan, listing }),
+      }).catch(() => {});
+    } catch (_) {}
     const next = free || quote.due === 0
       ? "live.html?fqdn=" + encodeURIComponent(fqdn) + "&listing=" + listing + "&bundle=" + plan + "&due=0&complimentary=1"
       : "checkout.html?bundle=" + plan + "&listing=" + listing + "&fqdn=" + encodeURIComponent(fqdn);

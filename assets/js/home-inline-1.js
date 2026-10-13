@@ -66,41 +66,11 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
     });
 
     const aiHistory = [];
-    const intro = $("home-intro");
-    const aiDesk = document.querySelector(".ai-desk");
     const aiThread = $("ai-thread");
     const aiForm = $("ai-form");
     const aiPrompt = $("ai-prompt");
     const aiSend = $("ai-send");
     const aiAction = $("ai-action");
-    let workspaceTimer;
-
-    function accountPanelOpen() {
-      return !$("panel-signin").hidden || !$("panel-whitelist").hidden || !$("panel-notifications").hidden;
-    }
-
-    function showWorkspace() {
-      if (accountPanelOpen()) return;
-      intro.classList.remove("resting-away");
-      aiDesk.classList.remove("resting-away");
-      aiDesk.inert = false;
-      aiDesk.removeAttribute("aria-hidden");
-    }
-
-    function pauseWorkspace(event) {
-      if (event && event.target instanceof Element && event.target.closest(".ai-desk")) return;
-      intro.classList.add("resting-away");
-      aiDesk.classList.add("resting-away");
-      aiDesk.inert = true;
-      aiDesk.setAttribute("aria-hidden", "true");
-      clearTimeout(workspaceTimer);
-      workspaceTimer = setTimeout(showWorkspace, 1000);
-    }
-
-    ["scroll", "pointerdown", "keydown"].forEach((name) => {
-      window.addEventListener(name, pauseWorkspace, { passive:true });
-    });
-
     function addAiMessage(text, kind) {
       const message = document.createElement("p");
       message.className = "ai-message " + kind;
@@ -168,18 +138,15 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
     }
 
     function closePanels() {
-      const wasOpen = accountPanelOpen();
       $("panel-signin").hidden = true;
       $("panel-whitelist").hidden = true;
       $("panel-notifications").hidden = true;
       $("tab-signin").setAttribute("aria-expanded", "false");
       $("tab-whitelist").setAttribute("aria-expanded", "false");
       $("tab-notifications").setAttribute("aria-expanded", "false");
-      if (wasOpen) pauseWorkspace();
     }
 
     function openPanel(which) {
-      pauseWorkspace();
       const sign = which === "signin";
       const whitelist = which === "whitelist";
       const notifications = which === "notifications";
@@ -239,6 +206,11 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       $("tab-notifications").classList.toggle("hidden", !session);
       $("signed-out").classList.toggle("hidden", Boolean(session));
       $("signed-in").classList.add("hidden");
+      if (session) {
+        // Keep the local seat aligned with the signed-in account so receipts sync to it.
+        const seat = S.load();
+        if (seat.session !== session) { seat.session = session; S.save(seat); }
+      }
 
       if (session && identityOperator) {
         $("tab-signin").textContent = "Profile";

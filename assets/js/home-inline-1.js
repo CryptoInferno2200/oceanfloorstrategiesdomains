@@ -74,16 +74,31 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       aiPrompt.value = "";
       aiAction.hidden = true;
       aiSend.disabled = true;
-      const thinking = addAiMessage("Charting the quickest route…", "bot thinking");
+      const thinking = addAiMessage("", "bot thinking");
+      const bulb = document.createElement("span");
+      bulb.className = "ai-bulb";
+      bulb.setAttribute("aria-hidden", "true");
+      bulb.textContent = "💡";
+      const label = document.createElement("span");
+      label.textContent = " Thinking… ";
+      const timer = document.createElement("span");
+      timer.className = "ai-timer";
+      timer.textContent = "🤔 0.0s";
+      thinking.append(bulb, label, timer);
+      const startedAt = performance.now();
+      const elapsed = () => ((performance.now() - startedAt) / 1000).toFixed(1) + "s";
+      const tick = setInterval(() => { timer.textContent = "🤔 " + elapsed(); }, 100);
       try {
         const response = await fetch("/api/ofs-assistant", {
           method:"POST",
           headers:{ "Content-Type":"application/json" },
-          body:JSON.stringify({ messages:aiHistory.slice(-8) }),
+          body:JSON.stringify({ messages:aiHistory.slice(-8).map((m) => ({ role:m.role, content:m.content.slice(0, 6000) })) }),
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "The build desk is unavailable.");
+        clearInterval(tick);
         thinking.remove();
+        addAiMessage("💡 Thought for " + elapsed(), "bot meta");
         addAiMessage(data.reply, "bot");
         aiHistory.push({ role:"assistant", content:data.reply });
         if (data.action && data.action.href) {
@@ -96,6 +111,7 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
           }
         }
       } catch (error) {
+        clearInterval(tick);
         thinking.remove();
         addAiMessage(error.message || "The build desk is unavailable. Try again.", "bot error");
       } finally {

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#041016" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" />
-  <title>OFS Domains — Profile setup</title>
+  <title>OFS Domains — Profile</title>
   <style>
     :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.82); --line:rgba(238,244,242,.12); }
     * { box-sizing: border-box; }
@@ -30,10 +30,13 @@
     .bar > span { display:block; height:100%; background:#cfe4dc; width:0; }
     .miss { color:#e0b7b0; font-size:13px; margin-top:8px; }
     ul { margin:8px 0 0; padding-left:18px; color:var(--muted); font-size:14px; }
-    #history { list-style:none; padding:0; display:grid; gap:8px; }
-    #history li { display:grid; grid-template-columns:1fr auto; gap:8px 16px; padding:12px; border-radius:12px; box-shadow:inset 0 0 0 1px var(--line); }
-    #history .history-meta { grid-column:1 / -1; font-size:12px; color:var(--muted); }
-    #history .history-price { color:var(--fg); white-space:nowrap; }
+    ul.rows { list-style:none; padding:0; display:grid; gap:8px; }
+    ul.rows li { display:grid; grid-template-columns:1fr auto; gap:8px 16px; padding:12px; border-radius:12px; box-shadow:inset 0 0 0 1px var(--line); }
+    ul.rows .row-meta { grid-column:1 / -1; font-size:12px; color:var(--muted); }
+    ul.rows .row-side { color:var(--fg); white-space:nowrap; }
+    ul.rows li.empty { display:block; color:var(--muted); }
+    a.ghost-link { display:block; margin-top:12px; padding:12px 14px; border-radius:12px; text-align:center; color:var(--fg); text-decoration:none; font-size:14px; box-shadow:0 0 0 1px var(--line); }
+    a.ghost-link[hidden] { display:none; }
   </style>
   <link rel="stylesheet" href="./reef-bg.css" />
 </head>
@@ -59,11 +62,24 @@
     <p class="k" id="pct" style="margin-top:8px">0% complete</p>
   </header>
   <main>
+    <div class="card" id="account">
+      <div class="k">Account</div>
+      <h2 style="font-family:Georgia,serif;font-weight:400;margin:8px 0" id="account-name">Loading your profile…</h2>
+      <p class="lead" style="margin:8px 0 0" id="vault-who">Checking your sign-in.</p>
+      <a class="ghost-link" id="account-signin" href="home.html" hidden>Sign in on Home</a>
+    </div>
     <div class="card" id="vault">
       <div class="k">Vault</div>
       <h2 style="font-family:Georgia,serif;font-weight:400;margin:8px 0">Purchase history</h2>
-      <p class="lead" style="margin:8px 0 0" id="vault-who">Every paid and complimentary service on this seat.</p>
-      <ul id="history"></ul>
+      <p class="lead" style="margin:8px 0 0" id="history-note">Every paid and complimentary service on this seat.</p>
+      <ul id="history" class="rows"></ul>
+    </div>
+    <div class="card" id="projects-card">
+      <div class="k">Build</div>
+      <h2 style="font-family:Georgia,serif;font-weight:400;margin:8px 0">Projects in development</h2>
+      <p class="lead" style="margin:8px 0 0" id="projects-note">Sites and apps you started from the build desk or Auto.</p>
+      <ul id="projects" class="rows"></ul>
+      <a class="ghost-link" href="auto.html">Start a new project</a>
     </div>
     <div class="card" id="sync-sources">
       <div class="k">Sync sources</div>
@@ -153,6 +169,7 @@
   <script src="./host.js"></script>
   <script src="./sync.js"></script>
   <script src="./assets/js/profile-inline-1.js"></script>
+  <script type="module" src="./assets/js/profile-account.js"></script>
 <script src="./mail.js"></script>
 <script src="./support.js"></script>
   <script src="./reef-bg.js"></script>

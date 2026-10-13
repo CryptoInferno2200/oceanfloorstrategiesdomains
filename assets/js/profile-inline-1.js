@@ -34,35 +34,12 @@ const COMPLETE = ["fqdn","businessName","logoUrl","description","displayName","t
       });
     });
     tick();
-    (async function paintHistory() {
-      const ul = document.getElementById("history");
-      const who = document.getElementById("vault-who");
-      const seat = window.OFSSeat ? OFSSeat.load().session : "";
-      if (who) who.textContent = seat ? ("Purchase history for " + seat) : "Sign in to load purchase history across your devices.";
-      ul.innerHTML = "<li>Loading purchase history…</li>";
-      let rows = [];
-      let remote = false;
-      try {
-        rows = window.OFSPurchases ? await OFSPurchases.remote() : [];
-        remote = true;
-      } catch (_) {
-        rows = window.OFSPurchases ? OFSPurchases.forAccount() : [];
-      }
+    (function paintVault() {
       const escapeHtml = (value) => {
         const span = document.createElement("span");
         span.textContent = String(value || "");
         return span.innerHTML;
       };
-      ul.innerHTML = rows.length
-        ? rows.map((r) => {
-            const when = new Date(r.purchased_at || r.at).toLocaleString();
-            const due = remote ? Number(r.amount_cents) / 100 : Number(r.due || 0);
-            const pay = r.complimentary || due === 0 ? "Complimentary" : "$" + due.toFixed(2);
-            const renewal = r.renews_at ? " · renews " + new Date(r.renews_at).toLocaleDateString() : "";
-            return "<li><strong>" + escapeHtml(r.label) + "</strong><span class='history-price'>" + pay + "</span><span class='history-meta'>" + escapeHtml(r.fqdn || "Account service") + " · " + escapeHtml(r.status) + " · " + when + renewal + "</span></li>";
-          }).join("")
-        : "<li>No purchases yet. Claim, OFS One, Abyss One, and complimentary services appear here.</li>";
-      if (!remote && rows.length && who) who.textContent += " Showing this device’s saved receipts until sync is available.";
       function paintWhite() {
         const white = document.getElementById("white-list");
         const sync = document.getElementById("white-sync");

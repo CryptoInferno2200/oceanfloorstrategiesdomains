@@ -67,8 +67,6 @@
       #ofs-err button{margin-left:auto;border:0;background:transparent;color:#f3d7d3;cursor:pointer;font:inherit}
       #ofs-cs-btn{position:fixed;right:16px;bottom:16px;z-index:30;height:48px;padding:0 16px;border:0;border-radius:999px;background:#eef4f2;color:#041016;font:600 13px ui-sans-serif,system-ui;cursor:pointer}
       #ofs-cs{position:fixed;right:16px;bottom:72px;z-index:30;width:min(22rem,calc(100vw - 2rem));max-height:min(28rem,70vh);display:flex;flex-direction:column;padding:14px;border-radius:16px;background:rgba(8,22,28,.96);color:#eef4f2;box-shadow:0 0 0 1px rgba(238,244,242,.12)}
-      #ofs-cs-btn,#ofs-cs{transition:opacity .15s ease}
-      body.ofs-cs-scrolling #ofs-cs-btn,body.ofs-cs-scrolling #ofs-cs{opacity:0;pointer-events:none}
       #ofs-cs[hidden]{display:none}
       #ofs-cs .k{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#9bb0aa}
       #ofs-cs-log{flex:1;overflow:auto;margin:10px 0;display:grid;gap:8px}
@@ -104,15 +102,6 @@
       "<form id='ofs-cs-form'><input id='ofs-cs-q' maxlength='280' placeholder='Ask about a plan, pay, or a break' /><button class='go' type='submit'>Send</button></form>" +
       "<div class='row'><button type='button' id='ofs-cs-mail'>Email support</button><button type='button' id='ofs-cs-close'>Close</button></div>";
     document.body.appendChild(panel);
-
-    let scrollTimer;
-    window.addEventListener("scroll", () => {
-      document.body.classList.add("ofs-cs-scrolling");
-      clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(() => {
-        document.body.classList.remove("ofs-cs-scrolling");
-      }, 1000);
-    }, { passive: true });
 
     function open() {
       panel.hidden = false;

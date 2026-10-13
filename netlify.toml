@@ -13,6 +13,7 @@
   from = "/"
   to = "/home.html"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/index.html"

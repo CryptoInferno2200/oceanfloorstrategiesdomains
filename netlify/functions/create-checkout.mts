@@ -15,8 +15,6 @@ export default async (request: Request) => {
   const origin = new URL(request.url).origin;
   if (request.headers.get("origin") && request.headers.get("origin") !== origin) return Response.json({ error: "Request origin is not allowed." }, { status: 403 });
   if (Number(request.headers.get("content-length") || 0) > 5000) return Response.json({ error: "Request is too large." }, { status: 413 });
-  const key = Netlify.env.get("STRIPE_SECRET_KEY");
-  if (!key) return Response.json({ error: "Checkout is not configured." }, { status: 503 });
   const body = await request.json().catch(() => ({})) as Record<string, unknown>;
   const plan = normalize(body.plan);
   const listing = normalize(body.listing || "both");
@@ -36,7 +34,31 @@ export default async (request: Request) => {
     const [launch] = await getDatabase().sql`SELECT fqdn, status FROM sauce_launches WHERE slug = ${sauce} AND user_email = ${normalize(user.email)}`;
     if (!launch || launch.fqdn !== fqdn || plan !== "one") return Response.json({ error: "Sauce launch not found." }, { status: 404 });
     if (launch.status === "published") return Response.json({ error: "This launch is already published." }, { status: 409 });
+    const db = getDatabase();
+    const email = normalize(user.email);
+    const [eligible] = await db.sql`SELECT email FROM identity_whitelist WHERE email = ${email}`;
+    if (eligible) {
+      // Complimentary seats publish without Stripe.
+      const purchasedAt = new Date();
+      const renewsAt = new Date(purchasedAt);
+      renewsAt.setUTCFullYear(renewsAt.getUTCFullYear() + 1);
+      await db.sql`
+        INSERT INTO purchase_history
+          (id, user_email, fqdn, plan, label, listing, amount_cents, complimentary, status, purchased_at, renews_at)
+        VALUES
+          (${"sauce-" + sauce}, ${email}, ${fqdn}, ${plan}, ${product.label}, ${listing}, ${0}, ${true}, ${"complimentary"}, ${purchasedAt.toISOString()}, ${renewsAt.toISOString()})
+        ON CONFLICT (id) DO NOTHING
+      `;
+      await db.sql`
+        UPDATE sauce_launches
+        SET status = 'published', published_at = COALESCE(published_at, NOW()), updated_at = NOW()
+        WHERE slug = ${sauce} AND user_email = ${email}
+      `;
+      return Response.json({ url: `${origin}/sauce.html?launched=${encodeURIComponent(sauce)}` }, { headers: { "Cache-Control": "no-store" } });
+    }
   }
+  const key = Netlify.env.get("STRIPE_SECRET_KEY");
+  if (!key) return Response.json({ error: "Checkout is not configured." }, { status: 503 });
   const params = new URLSearchParams({
     mode: "payment",
     success_url: `${origin}/profile.html?checkout=success`,

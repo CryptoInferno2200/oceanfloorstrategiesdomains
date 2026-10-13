@@ -4,7 +4,6 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
     let identityUser = null;
     let identityComplimentary = false;
     let identityOperator = false;
-    let remoteWhitelist = [];
     let recoveryMode = false;
     let inviteToken = "";
 
@@ -15,19 +14,6 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       if (error instanceof AuthError && error.status === 401) return "That email and password do not match. Create the account first if this is your first visit.";
       if (error instanceof AuthError && error.status === 403) return "Sign-in is unavailable for this account. Please try again or reset the password.";
       return error && error.message ? error.message : "Authentication failed. Please try again.";
-    }
-
-    async function whitelistRequest(options) {
-      const response = await fetch("/api/whitelist" + (options && options.query || ""), {
-        method: options && options.method || "GET",
-        headers: options && options.body ? { "content-type": "application/json" } : undefined,
-        body: options && options.body ? JSON.stringify(options.body) : undefined,
-      });
-      if (!response.ok) {
-        const result = await response.json().catch(() => ({}));
-        throw new Error(result.error || "Whitelist request failed.");
-      }
-      return response.status === 204 ? null : response.json();
     }
 
     async function refreshEntitlement() {
@@ -139,65 +125,18 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
 
     function closePanels() {
       $("panel-signin").hidden = true;
-      $("panel-whitelist").hidden = true;
       $("panel-notifications").hidden = true;
       $("tab-signin").setAttribute("aria-expanded", "false");
-      $("tab-whitelist").setAttribute("aria-expanded", "false");
       $("tab-notifications").setAttribute("aria-expanded", "false");
     }
 
     function openPanel(which) {
       const sign = which === "signin";
-      const whitelist = which === "whitelist";
       const notifications = which === "notifications";
       $("panel-signin").hidden = !sign;
-      $("panel-whitelist").hidden = !whitelist;
       $("panel-notifications").hidden = !notifications;
       $("tab-signin").setAttribute("aria-expanded", String(sign));
-      $("tab-whitelist").setAttribute("aria-expanded", String(whitelist));
       $("tab-notifications").setAttribute("aria-expanded", String(notifications));
-    }
-
-    async function paintInvites() {
-      const ul = $("invite-list");
-      ul.innerHTML = "";
-      const allowed = Boolean(identityUser && identityOperator);
-      $("form-invite").classList.toggle("hidden", !allowed);
-      $("whitelist-access").classList.toggle("hidden", allowed);
-      if (!allowed) {
-        ul.innerHTML = "<li class='lead' style='display:block'>Whitelist management is available after operator sign-in.</li>";
-        return;
-      }
-      try {
-        const result = await whitelistRequest();
-        remoteWhitelist = result.whitelist.map((row) => row.email);
-      } catch (error) {
-        $("invite-err").textContent = error.message;
-        return;
-      }
-      if (!remoteWhitelist.length) {
-        ul.innerHTML = "<li class='lead' style='display:block'>No invites yet.</li>";
-        return;
-      }
-      remoteWhitelist.forEach((email) => {
-        const status = "Allowed";
-        const li = document.createElement("li");
-        li.innerHTML = "<span class='mono'>" + email + "<br><span class='k'>" + status + "</span></span>";
-        const actions = document.createElement("span");
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = "Remove";
-        btn.disabled = S.isCreator(email);
-        btn.addEventListener("click", async () => {
-          try {
-            await whitelistRequest({ method: "DELETE", query: "?email=" + encodeURIComponent(email) });
-            await paintInvites();
-          } catch (error) { $("invite-err").textContent = error.message; }
-        });
-        actions.appendChild(btn);
-        li.appendChild(actions);
-        ul.appendChild(li);
-      });
     }
 
     function paint() {
@@ -215,10 +154,9 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       if (session && identityOperator) {
         $("tab-signin").textContent = "Profile";
         $("who").textContent = "Signed in as Creator · complimentary seat";
-        $("seat-note").textContent = "Inbox verified. Invite on Whitelist. They still verify too.";
+        $("seat-note").textContent = "Inbox verified.";
         $("signed-in").classList.remove("hidden");
         $("signed-out").classList.add("hidden");
-        paintInvites();
         paintBuys();
         return;
       }
@@ -226,9 +164,7 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       if (session) {
         $("tab-signin").textContent = "Profile";
         $("who").textContent = "Signed in as " + publicName(session);
-        $("seat-note").textContent = identityComplimentary
-          ? "Verified invite. This year is free on this vault."
-          : "Public account. Paid year still applies.";
+        $("seat-note").textContent = "Inbox verified.";
         $("signed-in").classList.remove("hidden");
         $("signed-out").classList.add("hidden");
         paintBuys();
@@ -248,29 +184,12 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
             return "<li><span>" + escapeHtml(r.label) + "<br><span class='mono'>" + escapeHtml(r.fqdn || "") + "</span></span><span>" + escapeHtml(pay) + "</span></li>";
           }).join("")
         : "<li>Vault is empty.</li>";
-      const white = $("profile-white");
-      if (!white) return;
-      const state = S.load();
-      const invited = (state.whitelist || []).slice();
-      if (!invited.includes(S.CREATOR)) invited.unshift(S.CREATOR);
-      white.innerHTML = invited.map((email) => {
-        const m = state.members[email];
-        const status = m && m.verified ? "verified" : "invited";
-        return "<li><span class='mono'>" + escapeHtml(email) + "</span><span class='k'>" + escapeHtml(status) + "</span></li>";
-      }).join("");
     }
     if (S.onSync) S.onSync(() => { paintBuys(); });
 
     $("tab-signin").addEventListener("click", () => {
       if (!$("panel-signin").hidden) closePanels();
       else openPanel("signin");
-    });
-    $("tab-whitelist").addEventListener("click", () => {
-      if (!$("panel-whitelist").hidden) closePanels();
-      else {
-        openPanel("whitelist");
-        paintInvites();
-      }
     });
     $("tab-notifications").addEventListener("click", () => {
       if (!$("panel-notifications").hidden) closePanels();
@@ -326,10 +245,6 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
         await paintNotifications();
       } catch (error) { $("notice-err").textContent = error.message; }
     });
-
-    function canInvite() {
-      return Boolean(identityUser && identityOperator);
-    }
 
     document.addEventListener("mousedown", (e) => {
       if (!$("account").contains(e.target)) closePanels();
@@ -465,23 +380,6 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       S.save(state);
       paint();
       openPanel("signin");
-    });
-
-    $("form-invite").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      $("invite-err").textContent = "";
-      if (!canInvite()) {
-        $("invite-err").textContent = "Authorize with the operator inbox first.";
-        return;
-      }
-      const email = S.norm($("invite").value);
-      if (!S.valid(email)) { $("invite-err").textContent = "Enter a valid email."; return; }
-      try {
-        await whitelistRequest({ method: "POST", body: { email } });
-        $("invite").value = "";
-        $("invite-ok").textContent = "Email added to the whitelist.";
-        await paintInvites();
-      } catch (error) { $("invite-err").textContent = error.message; }
     });
 
     // Pages like Sauce send visitors here with ?signin=1&next=sauce.html and get them back after sign-in.

@@ -1,5 +1,6 @@
 import type { Config } from "@netlify/functions";
 import { getUser } from "@netlify/identity";
+import { getDatabase } from "@netlify/database";
 
 const PLANS: Record<string, { label: string; cents: number }> = {
   claim: { label: "Claim · name only", cents: 1000 },
@@ -28,6 +29,14 @@ export default async (request: Request) => {
   const credit = plan === "claim" ? 1000 : 1099;
   const amount = product.cents + Math.max(0, (TLD_CENTS[tld] || 1099) - credit);
   const user = await getUser();
+  const sauce = normalize(body.sauce);
+  if (sauce) {
+    // Sauce launches are always OFS One, owned by the signed-in seat, and publish once paid.
+    if (!user?.email) return Response.json({ error: "Sign in to publish a Sauce launch." }, { status: 401 });
+    const [launch] = await getDatabase().sql`SELECT fqdn, status FROM sauce_launches WHERE slug = ${sauce} AND user_email = ${normalize(user.email)}`;
+    if (!launch || launch.fqdn !== fqdn || plan !== "one") return Response.json({ error: "Sauce launch not found." }, { status: 404 });
+    if (launch.status === "published") return Response.json({ error: "This launch is already published." }, { status: 409 });
+  }
   const params = new URLSearchParams({
     mode: "payment",
     success_url: `${origin}/profile.html?checkout=success`,
@@ -40,6 +49,11 @@ export default async (request: Request) => {
     "metadata[listing]": listing,
     "metadata[fqdn]": fqdn,
   });
+  if (sauce) {
+    params.set("metadata[sauce]", sauce);
+    params.set("success_url", `${origin}/sauce.html?launched=${encodeURIComponent(sauce)}`);
+    params.set("cancel_url", `${origin}/sauce.html#launch-${encodeURIComponent(sauce)}`);
+  }
   if (user?.email) params.set("customer_email", user.email);
   const response = await fetch("https://api.stripe.com/v1/checkout/sessions", {
     method: "POST",

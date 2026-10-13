@@ -3,9 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>OFS Domains — Stack + sauce</title>
+  <meta name="theme-color" content="#041016" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <title>OFS Domains — Sauce</title>
   <style>
-    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); }
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.88); --line:rgba(238,244,242,.12); --gold:#f2c46d; }
     * { box-sizing: border-box; }
     body { margin:0; font:16px/1.5 ui-sans-serif,system-ui; background:var(--bg); color:var(--fg); }
     header, main { max-width:760px; margin:0 auto; padding:24px 20px; }
@@ -13,12 +16,39 @@
     nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
     nav a.on { color:var(--fg); background:var(--card); }
     h1 { font-family:Georgia,serif; font-weight:400; letter-spacing:-.03em; }
+    h2 { font-family:Georgia,serif; font-weight:400; margin:6px 0 4px; }
     .k, .lead { color:var(--muted); }
     .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
-    .card { margin-top:14px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
-    table { width:100%; border-collapse:collapse; font-size:14px; }
-    th, td { text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
-    th { color:var(--muted); font-weight:500; font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+    .card { margin-top:14px; padding:18px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
+    label { display:block; font-size:12px; color:var(--muted); margin:12px 0 6px; }
+    input[type=text], textarea { width:100%; border:0; border-radius:12px; padding:12px 14px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font:inherit; }
+    textarea { min-height:96px; }
+    .terms { display:flex; gap:10px; align-items:flex-start; margin-top:14px; font-size:14px; color:var(--muted); }
+    .terms input { margin-top:4px; width:18px; height:18px; accent-color:var(--gold); }
+    button, .btn { display:inline-flex; align-items:center; justify-content:center; height:48px; padding:0 20px; border:0; border-radius:12px; background:var(--gold); color:#1a1205; font:inherit; font-weight:700; cursor:pointer; text-decoration:none; }
+    button.wide { width:100%; margin-top:16px; }
+    button:disabled { opacity:.55; cursor:progress; }
+    .btn.ghost { background:transparent; color:var(--fg); box-shadow:0 0 0 1px var(--line); font-weight:500; }
+    ol.steps { list-style:none; padding:0; margin:10px 0 0; display:grid; gap:8px; }
+    ol.steps li { display:flex; gap:10px; align-items:center; color:var(--muted); }
+    ol.steps li::before { content:""; width:10px; height:10px; border-radius:50%; box-shadow:0 0 0 1px var(--line); flex:none; }
+    ol.steps li.run { color:var(--fg); }
+    ol.steps li.run::before { background:var(--gold); animation:pulse 1s infinite alternate; }
+    ol.steps li.done { color:var(--fg); }
+    ol.steps li.done::before { background:#5fd4a8; }
+    ol.steps li.fail { color:#ff9b8a; }
+    ol.steps li.fail::before { background:#ff9b8a; }
+    @keyframes pulse { to { opacity:.3; } }
+    .launch { display:grid; grid-template-columns:72px 1fr; gap:16px; align-items:start; }
+    .launch img { width:72px; height:72px; border-radius:16px; object-fit:cover; background:#07161c; }
+    .pill { display:inline-block; font-size:12px; padding:3px 10px; border-radius:999px; box-shadow:0 0 0 1px var(--line); color:var(--muted); margin-right:6px; }
+    .pill.live { color:#5fd4a8; box-shadow:0 0 0 1px rgba(95,212,168,.5); }
+    .row { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+    details { margin-top:12px; }
+    summary { cursor:pointer; color:var(--fg); }
+    details ul { color:var(--muted); padding-left:18px; }
+    .err { color:#ff9b8a; }
+    [hidden] { display:none !important; }
   </style>
   <link rel="stylesheet" href="./reef-bg.css" />
 </head>
@@ -26,51 +56,69 @@
 <canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
 
   <header>
-    <div class="k">Parity + sauce</div>
-    <h1>Everything they ship. Plus the reef.</h1>
-    <p class="lead">Cloudflare Pages is the edge: global CDN, custom domain, TLS, redirects, headers, previews, rollbacks. OFS sits on that and sells the name, the listing, and the launch.</p>
+    <div class="k">The Sauce Button</div>
+    <h1>One everyday problem in. A launched product out.</h1>
+    <p class="lead">Sauce orchestrates the whole run: project idea, name claim, web hosting, launch kit, logo, and publish. You pay OFS One ($99) up front; OFS keeps 50% of the proceeds and profit the product earns.</p>
     <nav>
       <a href="home.html">Home</a>
+      <a href="auto.html">Auto</a>
       <a href="bundle.html">Products</a>
+      <a href="profile.html">Profile</a>
       <a class="on" href="sauce.html">Sauce</a>
       <a href="vault.html">Vault</a>
       <a href="host.html">Host</a>
     </nav>
   </header>
   <main>
-    <div class="card">
-      <div class="k">Same as Pages</div>
-      <table>
-        <tr><th>Feature</th><th>OFS</th></tr>
-        <tr><td>Global static host</td><td>Yes — Pages / your edge</td></tr>
-        <tr><td>Custom domain</td><td>Yes — claimed name</td></tr>
-        <tr><td>Auto TLS</td><td>Yes — $0</td></tr>
-        <tr><td>_redirects / _headers</td><td>Yes — in the live pack</td></tr>
-        <tr><td>HTTPS force</td><td>Yes</td></tr>
-        <tr><td>Preview URL</td><td>pages.dev until apex is live</td></tr>
-        <tr><td>Rollback</td><td>Redeploy last zip</td></tr>
-        <tr><td>Direct upload + wrangler</td><td>Yes</td></tr>
-        <tr><td>HSTS / nosniff</td><td>Yes</td></tr>
-      </table>
+    <div class="card" id="signin" hidden>
+      <div class="k">Sign in to press the button</div>
+      <p class="lead">Sauce ties every launch, its name, and its 50% revenue share to your seat. Write your problem below, then sign in — you'll come straight back here.</p>
+      <a class="btn" href="home.html?signin=1&amp;next=sauce.html">Sign in</a>
     </div>
+
     <div class="card">
-      <div class="k">Secret sauce — they do not sell this</div>
-      <table>
-        <tr><th>Sauce</th><th>Why it matters</th></tr>
-        <tr><td>Web + Web3 listing · $0</td><td>One name on both rails</td></tr>
-        <tr><td>Claim $10 / OFS One $99 / Abyss One $299</td><td>Name + seat, not a $23 renewal trap</td></tr>
-        <tr><td>Name only + Host park</td><td>Keep the site you already run</td></tr>
-        <tr><td>AI Auto run</td><td>Sentence → name → site → live</td></tr>
-        <tr><td>OFS Vault</td><td>Every purchase on the seat</td></tr>
-        <tr><td>Whitelist + verify + OAuth2</td><td>Invited free seats still prove the inbox</td></tr>
-        <tr><td>Haven bind + reef plot</td><td>Deed on-chain, public plot</td></tr>
-        <tr><td>Domain Privacy $0</td><td>WHOIS stays off the street</td></tr>
-        <tr><td>Publisher rights</td><td>No remix without consent</td></tr>
-        <tr><td>Brand token (not a sale)</td><td>Name launches with a mark in Haven</td></tr>
-      </table>
+      <div class="k">What one press automates</div>
+      <ol class="steps">
+        <li class="done">Project idea — a product built around your everyday problem</li>
+        <li class="done">Name claim — a domain picked for the brand</li>
+        <li class="done">Launch kit — pitch, social posts, email, checklist, keywords</li>
+        <li class="done">Logo — an AI-designed mark</li>
+        <li class="done">Web hosting — its own site at ofsdomains.com/s/&lt;name&gt;</li>
+        <li class="done">Publish — goes public after OFS One ($99)</li>
+      </ol>
     </div>
-    <p class="lead" style="margin-top:18px">Pages is the pipe. OFS is the name, the listing, and the vault. Use both. Do not leave the official copy on grok.me.</p>
+
+    <form class="card" id="form">
+      <div class="k">What problem should it solve?</div>
+      <label for="problem">The everyday problem</label>
+      <textarea id="problem" maxlength="1200" required placeholder="Roommates never know whose turn it is to buy groceries, and receipts get lost."></textarea>
+      <label for="audience">Who has it (optional)</label>
+      <input type="text" id="audience" maxlength="300" placeholder="College roommates, young families…" />
+      <label class="terms">
+        <input type="checkbox" id="accept" required />
+        <span>I agree to the Sauce terms: OFS One ($99) is paid up front to claim the name and publish, and OFS Domains keeps 50% of the proceeds and profit this application or website earns.</span>
+      </label>
+      <button class="wide" type="submit" id="go">Press the Sauce Button</button>
+    </form>
+
+    <div class="card" id="run" hidden>
+      <div class="k">Orchestrating</div>
+      <ol class="steps" id="steps">
+        <li data-step="idea">Shape the project idea</li>
+        <li data-step="name">Claim the name</li>
+        <li data-step="kit">Write the launch kit</li>
+        <li data-step="logo">Design the logo</li>
+        <li data-step="host">Host the site</li>
+        <li data-step="publish">Publish — OFS One $99 checkout</li>
+      </ol>
+      <p class="lead err" id="run-error" hidden></p>
+    </div>
+
+    <div id="launches"></div>
   </main>
+  <script type="module" src="./assets/js/sauce.js"></script>
+  <script src="./mail.js"></script>
+  <script src="./support.js"></script>
   <script src="./reef-bg.js"></script>
 </body>
 </html>

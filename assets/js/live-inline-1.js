@@ -27,7 +27,6 @@ const q = new URLSearchParams(location.search);
       return row;
     }));
     const carry = "?fqdn=" + encodeURIComponent(fqdn);
-    document.getElementById("toReef").href = "reef.html" + carry;
     document.getElementById("toBind").href = "bind.html" + carry;
     if (typeof OFSHost !== "undefined") {
       OFSHost.publish({ fqdn, businessName: name, plan: bundle || "claim", listing });

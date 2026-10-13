@@ -59,6 +59,14 @@ export default async (request: Request) => {
       (${String(session.id || event.id)}, ${email}, ${fqdn}, ${plan}, ${product.label}, ${listing}, ${expectedCents}, ${false}, ${"paid"}, ${purchasedAt.toISOString()}, ${renewsAt.toISOString()})
     ON CONFLICT (id) DO NOTHING
   `;
+  const sauce = normalize(session.metadata?.sauce);
+  if (sauce && plan === "one") {
+    await db.sql`
+      UPDATE sauce_launches
+      SET status = 'published', published_at = COALESCE(published_at, NOW()), checkout_session_id = ${String(session.id || event.id)}, updated_at = NOW()
+      WHERE slug = ${sauce} AND user_email = ${email} AND fqdn = ${fqdn}
+    `;
+  }
   return Response.json({ received: true });
 };
 

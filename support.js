@@ -62,22 +62,26 @@
     if (document.getElementById("ofs-cs")) return;
     const css = document.createElement("style");
     css.textContent = `
-      #ofs-err{position:fixed;left:12px;right:12px;top:12px;z-index:40;display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;background:#2a1514;color:#f3d7d3;box-shadow:0 0 0 1px rgba(243,215,211,.2);font:13px/1.4 ui-sans-serif,system-ui}
+      #ofs-err{position:fixed;left:12px;right:12px;top:12px;z-index:2147483001;display:flex;gap:10px;align-items:center;margin:0;padding:10px 12px;border-radius:14px;background:#2a1514;color:#f3d7d3;box-shadow:0 0 0 1px rgba(243,215,211,.2);font:13px/1.4 ui-sans-serif,system-ui}
       #ofs-err[hidden]{display:none}
-      #ofs-err button{margin-left:auto;border:0;background:transparent;color:#f3d7d3;cursor:pointer;font:inherit}
-      #ofs-cs-btn{position:fixed;right:16px;bottom:16px;z-index:30;height:48px;padding:0 16px;border:0;border-radius:999px;background:#eef4f2;color:#041016;font:600 13px ui-sans-serif,system-ui;cursor:pointer}
-      #ofs-cs{position:fixed;right:16px;bottom:72px;z-index:30;width:min(22rem,calc(100vw - 2rem));max-height:min(28rem,70vh);display:flex;flex-direction:column;padding:14px;border-radius:16px;background:rgba(8,22,28,.96);color:#eef4f2;box-shadow:0 0 0 1px rgba(238,244,242,.12)}
+      #ofs-err button{width:auto;height:auto;min-height:0;margin:0;padding:4px 6px;border:0;border-radius:8px;background:transparent;color:#f3d7d3;box-shadow:none;cursor:pointer;font:13px/1.4 ui-sans-serif,system-ui}
+      #ofs-err-route{margin-left:auto !important}
+      #ofs-cs-btn,#ofs-cs,#ofs-cs *{box-sizing:border-box;letter-spacing:normal;text-transform:none}
+      #ofs-cs-btn{position:fixed;right:16px;bottom:16px;left:auto;top:auto;z-index:2147483000;display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:0;max-width:none;height:48px;min-height:0;margin:0;padding:0 16px;border:0;border-radius:999px;background:#eef4f2;color:#041016;box-shadow:0 6px 18px rgba(0,0,0,.35);font:600 13px/1 ui-sans-serif,system-ui;white-space:nowrap;cursor:pointer}
+      #ofs-cs-btn[aria-expanded="true"]{box-shadow:0 0 0 2px #cfe4dc}
+      #ofs-cs{position:fixed;right:16px;bottom:72px;left:auto;top:auto;z-index:2147483000;width:min(22rem,calc(100vw - 2rem));height:auto;max-height:min(28rem,calc(100vh - 96px));display:flex;flex-direction:column;margin:0;padding:14px;border-radius:16px;background:rgba(8,22,28,.96);color:#eef4f2;box-shadow:0 0 0 1px rgba(238,244,242,.12),0 12px 32px rgba(0,0,0,.45);font:13px/1.4 ui-sans-serif,system-ui}
       #ofs-cs[hidden]{display:none}
-      #ofs-cs .k{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#9bb0aa}
-      #ofs-cs-log{flex:1;overflow:auto;margin:10px 0;display:grid;gap:8px}
-      #ofs-cs-log p{margin:0;padding:8px 10px;border-radius:12px;font-size:13px;line-height:1.4}
+      #ofs-cs .k{margin:0;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#9bb0aa}
+      #ofs-cs-log{flex:1;min-height:0;overflow:auto;margin:10px 0;display:grid;align-content:start;gap:8px}
+      #ofs-cs-log p{margin:0;padding:8px 10px;border-radius:12px;font-size:13px;line-height:1.4;color:#eef4f2}
       #ofs-cs-log p.bot{background:rgba(238,244,242,.06)}
       #ofs-cs-log p.you{background:#eef4f2;color:#041016}
-      #ofs-cs form{display:flex;gap:8px}
-      #ofs-cs input{flex:1;height:40px;border:0;border-radius:12px;padding:0 10px;background:#07161c;color:#eef4f2}
-      #ofs-cs button.go{height:40px;border:0;border-radius:12px;padding:0 12px;background:#eef4f2;color:#041016;font-weight:600;cursor:pointer}
-      #ofs-cs .row{display:flex;gap:8px;margin-top:8px}
-      #ofs-cs .row button{flex:1;height:36px;border:0;border-radius:12px;background:transparent;color:#9bb0aa;box-shadow:0 0 0 1px rgba(238,244,242,.12);cursor:pointer;font:12px ui-sans-serif,system-ui}
+      #ofs-cs form{display:flex;gap:8px;margin:0;padding:0}
+      #ofs-cs input{flex:1;min-width:0;width:auto;height:40px;margin:0;border:0;border-radius:12px;padding:0 10px;background:#07161c;color:#eef4f2;box-shadow:0 0 0 1px rgba(238,244,242,.12);font:13px ui-sans-serif,system-ui}
+      #ofs-cs button.go{flex:0 0 auto;width:auto;height:40px;min-height:0;margin:0;border:0;border-radius:12px;padding:0 12px;background:#eef4f2;color:#041016;box-shadow:none;font:600 13px/1 ui-sans-serif,system-ui;cursor:pointer}
+      #ofs-cs .row{display:flex;flex-wrap:nowrap;gap:8px;margin:8px 0 0;padding:0}
+      #ofs-cs .row button{flex:1;width:auto;height:36px;min-height:0;margin:0;padding:0 8px;border:0;border-radius:12px;background:transparent;color:#9bb0aa;box-shadow:0 0 0 1px rgba(238,244,242,.12);cursor:pointer;font:12px/1 ui-sans-serif,system-ui}
+      #ofs-cs-spacer{display:block;height:80px;margin:0;padding:0;pointer-events:none}
     `;
     document.head.appendChild(css);
 
@@ -91,7 +95,15 @@
     btn.id = "ofs-cs-btn";
     btn.type = "button";
     btn.textContent = "AI support";
+    btn.setAttribute("aria-controls", "ofs-cs");
+    btn.setAttribute("aria-expanded", "false");
     document.body.appendChild(btn);
+
+    // Keeps page content from ending underneath the floating button.
+    const spacer = document.createElement("div");
+    spacer.id = "ofs-cs-spacer";
+    spacer.setAttribute("aria-hidden", "true");
+    document.body.appendChild(spacer);
 
     const panel = document.createElement("div");
     panel.id = "ofs-cs";
@@ -103,14 +115,23 @@
       "<div class='row'><button type='button' id='ofs-cs-mail'>Email support</button><button type='button' id='ofs-cs-close'>Close</button></div>";
     document.body.appendChild(panel);
 
+    function close() {
+      panel.hidden = true;
+      btn.setAttribute("aria-expanded", "false");
+    }
     function open() {
       panel.hidden = false;
+      btn.setAttribute("aria-expanded", "true");
       if (!document.getElementById("ofs-cs-log").childElementCount) {
         bubble("bot", "I can walk Claim $10, OFS One $99, Abyss One $299, listings, and checkout. If I miss, we write support.");
       }
     }
-    btn.addEventListener("click", () => { panel.hidden = !panel.hidden; if (!panel.hidden) open(); });
-    document.getElementById("ofs-cs-close").addEventListener("click", () => { panel.hidden = true; });
+    btn.addEventListener("click", () => { if (panel.hidden) open(); else close(); });
+    document.getElementById("ofs-cs-close").addEventListener("click", close);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) close(); });
+    document.addEventListener("click", (e) => {
+      if (!panel.hidden && !panel.contains(e.target) && !btn.contains(e.target) && !err.contains(e.target)) close();
+    });
     document.getElementById("ofs-err-open").addEventListener("click", open);
     document.getElementById("ofs-err-x").addEventListener("click", () => { err.hidden = true; });
     document.getElementById("ofs-err-route").addEventListener("click", () => {

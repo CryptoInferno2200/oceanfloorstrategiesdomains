@@ -24,7 +24,8 @@
       max-width: 760px; margin: 0 auto; padding: 16px 20px 0; z-index:30;
     }
     .brand .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
-    .brand h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.04em; font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 6px 0 0; }
+    .brand h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.04em; font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 6px 0 0; display:flex; align-items:center; gap:12px; }
+    .brand-logo { flex:0 0 auto; width:1.2em; height:1.2em; border-radius:22%; box-shadow:0 0 0 1px var(--line); }
     .account { position: relative; flex: 0 0 auto; }
     .tabs { display:flex; gap:6px; }
     .tabs button {
@@ -134,7 +135,7 @@
   <div class="top">
     <div class="brand">
       <div class="k">Ocean Floor Strategies</div>
-      <h1>OFS Domains</h1>
+      <h1><img class="brand-logo" src="./icon.svg" alt="" width="40" height="40" />OFS Domains</h1>
     </div>
     <div class="account" id="account">
       <div class="tabs">
@@ -229,11 +230,8 @@
         <a href="bundle.html">Products</a>
         <a href="profile.html">Profile</a>
         <a href="vault.html">Vault</a>
-        <a href="bind.html">Bind</a>
         <a href="host.html">Host</a>
-        <a href="live.html">Go live</a>
         <a href="sauce.html">Sauce</a>
-        <a href="everything.html">Everything</a>
       </div>
     </nav>
     <div class="row">

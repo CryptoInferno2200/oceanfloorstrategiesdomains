@@ -57,6 +57,9 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
     const aiPrompt = $("ai-prompt");
     const aiSend = $("ai-send");
     const aiAction = $("ai-action");
+    const aiFiles = $("ai-files");
+    const aiFileInput = $("ai-file-input");
+    let aiPending = [];
     function addAiMessage(text, kind) {
       const message = document.createElement("p");
       message.className = "ai-message " + kind;
@@ -66,14 +69,141 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       return message;
     }
 
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / 1048576).toFixed(1) + " MB";
+    }
+
+    function syncSend() {
+      aiSend.disabled = aiPending.some((item) => item.state === "uploading") || aiSend.dataset.busy === "1";
+    }
+
+    function renderAiFiles() {
+      aiFiles.replaceChildren(...aiPending.map((item) => {
+        const chip = document.createElement("span");
+        chip.className = "ai-file" + (item.state === "error" ? " error" : "");
+        const name = document.createElement("span");
+        name.className = "name";
+        name.textContent = item.file.name;
+        const size = document.createElement("span");
+        size.className = "size";
+        size.textContent = item.state === "uploading" ? Math.round(item.progress * 100) + "%" : item.state === "error" ? item.error : formatBytes(item.file.size);
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.textContent = "×";
+        remove.setAttribute("aria-label", "Remove " + item.file.name);
+        remove.addEventListener("click", () => removeAiFile(item));
+        chip.append(name, size, remove);
+        if (item.state === "uploading") {
+          const bar = document.createElement("span");
+          bar.className = "bar";
+          bar.style.width = Math.round(item.progress * 100) + "%";
+          chip.appendChild(bar);
+        }
+        return chip;
+      }));
+      syncSend();
+    }
+
+    function removeAiFile(item) {
+      item.cancelled = true;
+      aiPending = aiPending.filter((entry) => entry !== item);
+      if (item.id) fetch("/api/ofs-uploads?id=" + encodeURIComponent(item.id), { method:"DELETE" }).catch(() => {});
+      renderAiFiles();
+    }
+
+    async function uploadAiFile(item) {
+      try {
+        const start = await fetch("/api/ofs-uploads", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body:JSON.stringify({ name:item.file.name, type:item.file.type, size:item.file.size }),
+        });
+        const info = await start.json();
+        if (!start.ok) throw new Error(info.error || "Upload failed");
+        item.id = info.id;
+        for (let part = 0; part < info.parts; part++) {
+          if (item.cancelled) return;
+          const chunk = item.file.slice(part * info.chunkBytes, (part + 1) * info.chunkBytes);
+          let response;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            response = await fetch("/api/ofs-uploads?id=" + encodeURIComponent(info.id) + "&part=" + part, {
+              method:"PUT",
+              headers:{ "Content-Type":"application/octet-stream" },
+              body:chunk,
+            }).catch(() => null);
+            if (response && (response.ok || response.status < 500)) break;
+          }
+          if (!response || !response.ok) {
+            const data = response ? await response.json().catch(() => ({})) : {};
+            throw new Error(data.error || "Upload failed");
+          }
+          item.progress = (part + 1) / info.parts;
+          renderAiFiles();
+        }
+        item.state = "ready";
+      } catch (error) {
+        item.state = "error";
+        item.error = error.message || "Upload failed";
+      }
+      renderAiFiles();
+    }
+
+    function addAiFiles(fileList) {
+      const files = Array.from(fileList || []).filter((file) => file.size > 0);
+      const room = 10 - aiPending.length;
+      if (files.length > room) addAiMessage("You can attach up to 10 files per message.", "bot error");
+      files.slice(0, Math.max(0, room)).forEach((file) => {
+        const item = { file, state:"uploading", progress:0, id:"" };
+        aiPending.push(item);
+        uploadAiFile(item);
+      });
+      renderAiFiles();
+    }
+
+    $("ai-attach").addEventListener("click", () => aiFileInput.click());
+    aiFileInput.addEventListener("change", () => {
+      addAiFiles(aiFileInput.files);
+      aiFileInput.value = "";
+    });
+    aiForm.addEventListener("dragover", (event) => {
+      if (!event.dataTransfer || !Array.from(event.dataTransfer.types).includes("Files")) return;
+      event.preventDefault();
+      aiForm.classList.add("dragging");
+    });
+    aiForm.addEventListener("dragleave", () => aiForm.classList.remove("dragging"));
+    aiForm.addEventListener("drop", (event) => {
+      if (!event.dataTransfer || !event.dataTransfer.files.length) return;
+      event.preventDefault();
+      aiForm.classList.remove("dragging");
+      addAiFiles(event.dataTransfer.files);
+    });
+    aiPrompt.addEventListener("paste", (event) => {
+      if (event.clipboardData && event.clipboardData.files.length) {
+        event.preventDefault();
+        addAiFiles(event.clipboardData.files);
+      }
+    });
+
     async function askOFS(prompt) {
-      const clean = String(prompt || "").trim();
+      const ready = aiPending.filter((item) => item.state === "ready");
+      const clean = String(prompt || "").trim() || (ready.length ? "Please review the attached file" + (ready.length > 1 ? "s" : "") + " and tell me how they can help build my business." : "");
       if (!clean || aiSend.disabled) return;
-      addAiMessage(clean, "user");
-      aiHistory.push({ role:"user", content:clean });
+      const userMessage = addAiMessage(clean, "user");
+      if (ready.length) {
+        const attached = document.createElement("span");
+        attached.className = "ai-attached";
+        attached.textContent = "📎 " + ready.map((item) => item.file.name).join(", ");
+        userMessage.appendChild(attached);
+      }
+      aiHistory.push({ role:"user", content:clean, attachments:ready.map((item) => item.id) });
+      aiPending = aiPending.filter((item) => item.state !== "ready");
+      renderAiFiles();
       aiPrompt.value = "";
       aiAction.hidden = true;
-      aiSend.disabled = true;
+      aiSend.dataset.busy = "1";
+      syncSend();
       const thinking = addAiMessage("", "bot thinking");
       const bulb = document.createElement("span");
       bulb.className = "ai-bulb";
@@ -92,7 +222,7 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
         const response = await fetch("/api/ofs-assistant", {
           method:"POST",
           headers:{ "Content-Type":"application/json" },
-          body:JSON.stringify({ messages:aiHistory.slice(-8).map((m) => ({ role:m.role, content:m.content.slice(0, 6000) })) }),
+          body:JSON.stringify({ messages:aiHistory.slice(-8).map((m) => ({ role:m.role, content:m.content.slice(0, 6000), attachments:m.attachments || [] })) }),
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "The build desk is unavailable.");
@@ -115,7 +245,8 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
         thinking.remove();
         addAiMessage(error.message || "The build desk is unavailable. Try again.", "bot error");
       } finally {
-        aiSend.disabled = false;
+        aiSend.dataset.busy = "";
+        syncSend();
         aiPrompt.focus();
       }
     }

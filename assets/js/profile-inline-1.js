@@ -18,19 +18,50 @@ const COMPLETE = ["fqdn","businessName","logoUrl","description","displayName","t
       document.getElementById("go").disabled = miss.length > 0;
     }
     document.getElementById("form").addEventListener("input", tick);
-    document.getElementById("form").addEventListener("submit", (e) => {
+    const PROFILE_KEY = "ofs.domains.profile.v1";
+    function restore() {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || "null"); } catch (_) {}
+      if (!saved || typeof saved !== "object") return;
+      const f = document.getElementById("form");
+      for (const el of f.elements) {
+        if (el.name && typeof saved[el.name] === "string" && saved[el.name] && (el.tagName === "SELECT" || !el.value)) el.value = saved[el.name];
+      }
+    }
+    document.getElementById("form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const p = read();
-      const q = new URLSearchParams(p).toString();
-      location.href = "live.html?" + q;
+      const fqdn = String(p.fqdn || "").trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+      const go = document.getElementById("go");
+      // The full form (including public email and Haven address) stays on this device; only the name goes in the URL.
+      try { localStorage.setItem(PROFILE_KEY, JSON.stringify(Object.assign({}, p, { fqdn, at: Date.now() }))); } catch (_) {}
+      go.disabled = true;
+      try {
+        // Signed-in accounts also keep the name + description on the project; signed-out requests get 401 and are ignored.
+        const response = await fetch("/api/projects", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ fqdn, name: p.businessName, description: p.description, listing: p.listing }),
+        });
+        if (response.status === 402) {
+          const result = await response.json().catch(() => ({}));
+          document.getElementById("miss").textContent = "Saved on this device. " + (result.error || "Project limit reached.") + " Delete a project above to free a slot.";
+          go.disabled = false;
+          return;
+        }
+      } catch (_) {}
+      location.href = "live.html?fqdn=" + encodeURIComponent(fqdn);
     });
     const boot = new URLSearchParams(location.search);
+    restore();
     if (boot.get("fqdn")) document.getElementById("fqdn").value = boot.get("fqdn");
     document.querySelectorAll("nav a").forEach((a) => {
       a.addEventListener("click", (e) => {
+        const fqdn = read().fqdn;
+        if (!fqdn) return;
         const href = a.getAttribute("href").split("?")[0];
         e.preventDefault();
-        location.href = href + "?fqdn=" + encodeURIComponent(read().fqdn || "kelpchart.com");
+        location.href = href + "?fqdn=" + encodeURIComponent(fqdn);
       });
     });
     tick();
@@ -65,7 +96,7 @@ const COMPLETE = ["fqdn","businessName","logoUrl","description","displayName","t
           return "<li>" + escapeHtml(s.name) + " · " + mark + " · " + Number(s.count || 0) + " · " + escapeHtml(when) + escapeHtml(extra) + "</li>";
         }).join("");
         const err = document.getElementById("sync-err");
-        if (err) err.textContent = failed.length ? failed.length + " source" + (failed.length === 1 ? "" : "s") + " failed. Retry keeps the good ones." : "";
+        if (err) err.textContent = failed.length ? failed.length + " saved source" + (failed.length === 1 ? "" : "s") + " could not be read on this device." : "";
       }
       paintSources();
       if (window.OFSSync) {
@@ -74,11 +105,8 @@ const COMPLETE = ["fqdn","businessName","logoUrl","description","displayName","t
           OFSSync.run();
           paintWhite();
           paintSources();
-        });
-        document.getElementById("do-sync-retry").addEventListener("click", () => {
-          OFSSync.retryFailed();
-          paintWhite();
-          paintSources();
+          // profile-account.js reloads purchases and projects from the server on this event.
+          window.dispatchEvent(new CustomEvent("ofs-profile-refresh"));
         });
       }
     })();

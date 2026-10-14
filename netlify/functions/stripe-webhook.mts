@@ -1,6 +1,7 @@
 import type { Config } from "@netlify/functions";
 import { getDatabase } from "@netlify/database";
 import { PLANS, firstChargeCents, tldOf } from "../lib/pricing.mts";
+import { attemptRegistration, queueRegistration } from "../lib/registrar.mts";
 
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
 const safeEqual = (a: string, b: string) => {
@@ -105,8 +106,8 @@ export default async (request: Request) => {
       if (periodEnd) {
         await db.sql`
           UPDATE purchase_history
-          SET renews_at = GREATEST(COALESCE(renews_at, NOW()), ${new Date(periodEnd * 1000).toISOString()}::timestamptz), status = 'paid'
-          WHERE stripe_subscription_id = ${subscription}
+          SET renews_at = GREATEST(COALESCE(renews_at, NOW()), ${new Date(periodEnd * 1000).toISOString()}::timestamptz)
+          WHERE stripe_subscription_id = ${subscription} AND status = 'paid'
         `;
       }
     }
@@ -122,7 +123,9 @@ export default async (request: Request) => {
   const listing = normalize(session.metadata?.listing || "both");
   const expectedCents = firstChargeCents(plan, tldOf(fqdn));
   if (!product || Number(session.amount_total) !== expectedCents || !email || !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(fqdn) || !["web", "web3", "both"].includes(listing)) {
-    return Response.json({ error: "Verified payment metadata is incomplete." }, { status: 422 });
+    // Acknowledge so Stripe stops retrying, but leave a trail: the customer paid and needs manual follow-up or a refund.
+    console.error(`Paid session ${String(session.id)} needs review: metadata or amount did not verify (plan=${plan}, fqdn=${fqdn}, amount=${session.amount_total}, expected=${expectedCents}).`);
+    return Response.json({ received: true, review: true });
   }
   const db = getDatabase();
   const purchasedAt = new Date(Number(session.created || Math.floor(Date.now() / 1000)) * 1000);
@@ -137,6 +140,10 @@ export default async (request: Request) => {
       (${String(session.id || event.id)}, ${email}, ${fqdn}, ${plan}, ${product.label}, ${listing}, ${expectedCents}, ${false}, ${"paid"}, ${purchasedAt.toISOString()}, ${renewsAt.toISOString()}, ${subscription})
     ON CONFLICT (id) DO NOTHING
   `;
+  const purchaseId = String(session.id || event.id);
+  await queueRegistration(purchaseId, email, fqdn);
+  // A failed attempt stays queued; the registrar-retry schedule picks it up.
+  await attemptRegistration(purchaseId).catch((error) => console.error(`Registration for ${purchaseId} deferred`, error));
   const sauce = normalize(session.metadata?.sauce);
   if (sauce && plan === "one") {
     await db.sql`

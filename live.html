@@ -4,9 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#041016" />
+  <meta name="robots" content="noindex" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" />
-  <title>OFS Domains — Go live</title>
+  <title>OFS Domains — Receipt</title>
   <style>
     :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.82); --line:rgba(238,244,242,.12); }
     * { box-sizing: border-box; }
@@ -20,6 +21,7 @@
     .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
     .card { margin-top:16px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
     ul { margin:8px 0 0; padding-left:18px; color:var(--muted); }
+    a.btn[hidden] { display:none; }
     a.btn { display:inline-block; margin-top:12px; margin-right:8px; padding:12px 16px; border-radius:12px; background:var(--fg); color:var(--bg); text-decoration:none; font-weight:600; }
   </style>
   <link rel="stylesheet" href="./reef-bg.css" />
@@ -28,14 +30,15 @@
 <canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
 
   <header>
-    <div class="k">Go live</div>
-    <h1 id="title">kelpchart.com</h1>
-    <p class="lead" id="sub">Receipt for this name.</p>
+    <div class="k">Go live · Receipt</div>
+    <h1 id="title">Loading receipt…</h1>
+    <p class="lead" id="sub">Checking your sign-in.</p>
     <nav>
       <a href="home.html">Home</a>
       <a href="auto.html">Auto</a>
       <a href="bundle.html">Products</a>
       <a href="profile.html">Profile</a>
+      <a href="workspace.html">Workspace</a>
       <a href="sauce.html">Sauce</a>
       <a href="vault.html">Vault</a>
       <a href="bind.html">Bind</a>
@@ -47,14 +50,15 @@
     <div class="card">
       <div class="k">On this receipt</div>
       <ul id="list"></ul>
-      <a class="btn" id="toHost" href="site.html">Publish on OFS Host</a>
+      <a class="btn" id="toSignin" href="home.html" hidden>Sign in on Home</a>
       <a class="btn" href="vault.html">Open vault</a>
-      <a class="btn" id="toBind" href="bind.html" style="background:transparent;color:var(--fg);box-shadow:0 0 0 1px var(--line)">Bind Haven</a>
+      <a class="btn" id="toHost" href="site.html" hidden style="background:transparent;color:var(--fg);box-shadow:0 0 0 1px var(--line)">Site preview</a>
+      <a class="btn" id="toBind" href="bind.html" hidden style="background:transparent;color:var(--fg);box-shadow:0 0 0 1px var(--line)">Web3 binding preview</a>
     </div>
   </main>
   <script src="./purchases.js"></script>
   <script src="./host.js"></script>
-  <script src="./assets/js/live-inline-1.js"></script>
+  <script type="module" src="./assets/js/live-inline-1.js"></script>
 <script src="./mail.js"></script>
 <script src="./support.js"></script>
   <script src="./reef-bg.js"></script>

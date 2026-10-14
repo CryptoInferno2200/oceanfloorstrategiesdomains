@@ -5,7 +5,7 @@ const SPECIES = { com:"Staghorn", net:"Kelp hold", org:"Brain coral", app:"Sea f
     function split(fqdn) {
       const n = (fqdn || "").trim().toLowerCase().replace(/^https?:\/\//,"").replace(/\/.*$/,"");
       const i = n.lastIndexOf(".");
-      if (i <= 0) return { fqdn:n || "kelpchart.com", sld: n.split(".")[0] || "kelpchart", tld: "com" };
+      if (i <= 0) return { fqdn:n || "example.com", sld: n.split(".")[0] || "example", tld: "com" };
       return { fqdn:n, sld:n.slice(0,i), tld:n.slice(i+1) };
     }
     function carry(href) {
@@ -21,7 +21,7 @@ const SPECIES = { com:"Staghorn", net:"Kelp hold", org:"Brain coral", app:"Sea f
       const c = document.getElementById("reef");
       const ctx = c.getContext("2d");
       const w = c.width, h = c.height;
-      const { tld } = split(fqdn);
+      const { tld, fqdn: name } = split(fqdn);
       sha256(fqdn).then(seed => {
         const H = hue(seed);
         const g = ctx.createLinearGradient(0,0,0,h);
@@ -44,9 +44,11 @@ const SPECIES = { com:"Staghorn", net:"Kelp hold", org:"Brain coral", app:"Sea f
           ctx.beginPath(); ctx.arc(cx, cy-40, 70, 0, Math.PI*2); ctx.fill();
         }
         const spec = SPECIES[tld] || "Staghorn";
-        document.getElementById("line").textContent = bound
-          ? spec + " · bound to demo Haven wallet · yours"
-          : spec + " waiting in unclaimed water";
+        const caption = bound
+          ? spec + " · preview bind to an illustrative Haven wallet · not on-chain"
+          : spec + " · preview plot";
+        document.getElementById("line").textContent = caption;
+        c.setAttribute("aria-label", "Illustrative reef plot for " + name + ": " + caption);
       });
     }
     document.getElementById("preview").onclick = () => {
@@ -56,18 +58,26 @@ const SPECIES = { com:"Staghorn", net:"Kelp hold", org:"Brain coral", app:"Sea f
     document.getElementById("bind").onclick = async () => {
       if (listing === "web") {
         document.getElementById("intent").textContent = "Web only. Turn on Both or Web3 to bind Haven.";
-        document.getElementById("dns").innerHTML = "";
+        document.getElementById("dns").replaceChildren();
         document.getElementById("out").hidden = false;
         return;
       }
       const fqdn = split(document.getElementById("fqdn").value).fqdn;
+      // Illustrative values only: both are SHA-256 hashes of the name, not real on-chain addresses.
       const wallet = "0xHAVEN" + (await sha256(fqdn)).slice(0,34);
       const node = "0x" + await sha256(fqdn);
       paint(fqdn, true);
       document.getElementById("intent").textContent =
-        `OFS Haven bind\nname: ${fqdn}\nnode: ${node}\nwallet: ${wallet}`;
-      document.getElementById("dns").innerHTML =
-        `<li>TXT @ "OFS1 ${wallet}"</li><li>TXT _ens "a=${wallet}"</li><li>ALIAS @ sites.ofs.domains.</li><li>CNAME www sites.ofs.domains.</li>`;
+        `OFS Haven bind (preview — not on-chain)\nname: ${fqdn}\nnode: ${node} (illustrative hash)\nwallet: ${wallet} (illustrative hash)`;
+      const records = [
+        `TXT @ "OFS1 ${wallet}" (illustrative)`,
+        `TXT _ens "a=${wallet}" (illustrative — not an ENS record)`,
+        "ALIAS @ your-site-host.example. (placeholder target)",
+        "CNAME www your-site-host.example. (placeholder target)",
+      ];
+      document.getElementById("dns").replaceChildren(...records.map((value) => {
+        const li = document.createElement("li"); li.textContent = value; return li;
+      }));
       document.getElementById("out").hidden = false;
     };
     let listing = "both";
@@ -76,6 +86,7 @@ const SPECIES = { com:"Staghorn", net:"Kelp hold", org:"Brain coral", app:"Sea f
         listing = b.getAttribute("data-list");
         document.querySelectorAll("[data-list]").forEach((x) => {
           x.classList.toggle("ghost", x !== b);
+          x.setAttribute("aria-pressed", String(x === b));
         });
         const copy = {
           both: "Web + Web3 is on. Same year. Same letters. $0 extra.",

@@ -2,6 +2,7 @@ import type { Config } from "@netlify/functions";
 import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
 import { PLANS, firstChargeCents, surchargeCents, tldOf } from "../lib/pricing.mts";
+import { attemptRegistration, checkAvailability, queueRegistration } from "../lib/registrar.mts";
 
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
 
@@ -18,6 +19,16 @@ export default async (request: Request) => {
   if (!product || !["web", "web3", "both"].includes(listing) || !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(fqdn)) {
     return Response.json({ error: "Checkout details are invalid." }, { status: 400 });
   }
+  // One buyer per name: a name already sold here stays with its first owner.
+  const [taken] = await getDatabase().sql`
+    SELECT id FROM purchase_history
+    WHERE fqdn = ${fqdn} AND status IN ('paid', 'complimentary', 'pending')
+    LIMIT 1
+  `;
+  if (taken) return Response.json({ error: `${fqdn} is already claimed here. Try another name.` }, { status: 409 });
+  // Nothing is charged for a name the registrar cannot sell at the listed price.
+  const available = await checkAvailability(fqdn);
+  if (!available.ok) return Response.json({ error: available.error }, { status: available.status });
   const tld = tldOf(fqdn);
   const surcharge = surchargeCents(plan, tld);
   const amount = firstChargeCents(plan, tld);
@@ -44,6 +55,8 @@ export default async (request: Request) => {
           (${"sauce-" + sauce}, ${email}, ${fqdn}, ${plan}, ${product.label}, ${listing}, ${0}, ${true}, ${"complimentary"}, ${purchasedAt.toISOString()}, ${renewsAt.toISOString()})
         ON CONFLICT (id) DO NOTHING
       `;
+      await queueRegistration("sauce-" + sauce, email, fqdn);
+      await attemptRegistration("sauce-" + sauce);
       await db.sql`
         UPDATE sauce_launches
         SET status = 'published', published_at = COALESCE(published_at, NOW()), updated_at = NOW()
@@ -92,7 +105,10 @@ export default async (request: Request) => {
     body: params,
   });
   const session = await response.json().catch(() => ({})) as { url?: string; error?: { message?: string } };
-  if (!response.ok || !session.url) return Response.json({ error: session.error?.message || "Checkout could not start." }, { status: 502 });
+  if (!response.ok || !session.url) {
+    console.error("Stripe checkout session failed", response.status, session.error?.message);
+    return Response.json({ error: "Checkout could not start. Please try again." }, { status: 502 });
+  }
   return Response.json({ url: session.url }, { headers: { "Cache-Control": "no-store" } });
 };
 

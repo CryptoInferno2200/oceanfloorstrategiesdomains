@@ -15,8 +15,10 @@ const SANDBOX_CSP = [
   "frame-ancestors 'self'",
 ].join("; ");
 
+const esc = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+
 function notice(message: string, status: number) {
-  return new Response(`<!doctype html><meta charset="utf-8"><title>Sandbox</title><p style="font:16px system-ui;padding:24px">${message}</p>`, {
+  return new Response(`<!doctype html><meta charset="utf-8"><title>Sandbox</title><p style="font:16px system-ui;padding:24px">${esc(message)}</p>`, {
     status,
     headers: { "Content-Type": "text/html; charset=utf-8", "Content-Security-Policy": SANDBOX_CSP, "Cache-Control": "no-store" },
   });

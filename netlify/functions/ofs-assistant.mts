@@ -124,13 +124,44 @@ async function complete(provider: string, model: string, messages: ChatMessage[]
   return response.text || "";
 }
 
-function parseResult(raw: string) {
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
+// Best-effort read of the "reply" string from a truncated or malformed JSON wrapper.
+function salvageReply(raw: string) {
+  const key = raw.match(/"reply"\s*:\s*"/);
+  if (!key || key.index === undefined) return "";
+  let text = "";
+  for (let i = key.index + key[0].length; i < raw.length; i++) {
+    const ch = raw[i];
+    if (ch === '"') break;
+    if (ch !== "\\") { text += ch; continue; }
+    const next = raw[++i];
+    if (next === undefined) break;
+    if (next === "u") {
+      const hex = raw.slice(i + 1, i + 5);
+      if (!/^[0-9a-fA-F]{4}$/.test(hex)) break;
+      text += String.fromCharCode(parseInt(hex, 16));
+      i += 4;
+    } else {
+      text += ({ n: "\n", t: "\t", r: "\r", b: "\b", f: "\f" } as Record<string, string>)[next] ?? next;
+    }
+  }
+  return text.trim();
+}
+
+function parseResult(raw: string): { reply?: unknown; action?: unknown } {
+  const trimmed = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
   try {
-    if (start !== -1 && end > start) return JSON.parse(raw.slice(start, end + 1));
+    if (start !== -1 && end > start) {
+      const parsed = JSON.parse(trimmed.slice(start, end + 1));
+      if (parsed && typeof parsed === "object" && typeof parsed.reply === "string") return parsed;
+    }
   } catch {}
-  return { reply: raw.trim(), action: null };
+  const salvaged = salvageReply(trimmed);
+  if (salvaged) return { reply: salvaged, action: null };
+  // Never hand the raw wrapper back as the answer.
+  if (/^\{\s*"reply"/.test(trimmed) || (start === 0 && end === -1)) return { reply: "", action: null };
+  return { reply: trimmed, action: null };
 }
 
 function json(body: unknown, status = 200) {
@@ -154,14 +185,20 @@ export default async (req: Request, context: Context) => {
   const limit = user ? 60 : 20;
   const bucket = new Date();
   bucket.setUTCMinutes(0, 0, 0);
-  const db = getDatabase();
-  const [usage] = await db.sql`
-    INSERT INTO ai_rate_limits (identity_key, window_start, request_count)
-    VALUES (${identity}, ${bucket.toISOString()}, 1)
-    ON CONFLICT (identity_key, window_start)
-    DO UPDATE SET request_count = ai_rate_limits.request_count + 1
-    RETURNING request_count
-  `;
+  let usage: { request_count?: unknown } | undefined;
+  try {
+    const db = getDatabase();
+    [usage] = await db.sql`
+      INSERT INTO ai_rate_limits (identity_key, window_start, request_count)
+      VALUES (${identity}, ${bucket.toISOString()}, 1)
+      ON CONFLICT (identity_key, window_start)
+      DO UPDATE SET request_count = ai_rate_limits.request_count + 1
+      RETURNING request_count
+    `;
+  } catch (error) {
+    console.error("Build Desk rate limit check failed", error);
+    return json({ error: "The build desk is temporarily unavailable. Please try again shortly." }, 503);
+  }
   if (Number(usage?.request_count || 0) > limit) return json({ error: "Build Desk limit reached. Try again later." }, 429);
 
   let body: { messages?: Array<ChatMessage & { attachments?: unknown }> };
@@ -226,7 +263,9 @@ export default async (req: Request, context: Context) => {
       reply?: string;
       action?: { label?: string; href?: string; brief?: string } | null;
     };
-    const reply = String(result.reply || "Tell me a little more about what you want to create.").slice(0, 20000);
+    let reply = String(result.reply || "").trim();
+    if (/^\{\s*"reply"/.test(reply)) reply = salvageReply(reply);
+    reply = String(reply || "Tell me a little more about what you want to create.").slice(0, 20000);
     const action = result.action && ROUTES.has(String(result.action.href))
       ? {
           label: String(result.action.label || "Open workflow").slice(0, 50),

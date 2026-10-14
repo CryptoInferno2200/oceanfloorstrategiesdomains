@@ -8,12 +8,13 @@
     { test: /ofs one|\$99|ninety/i, reply: "OFS One is $99 a year. Tide seat, launch kit, plot, deed, and the name year are in it. Checkout opens the OFS One Stripe link." },
     { test: /abyss/i, reply: "Abyss One is $299 a month for five names, the studio seat, and unlimited projects. Other plans cap at 3 projects. Store, studio, and game stacks are in it. Checkout opens the Abyss One Stripe link." },
     { test: /list|web3|dual|both/i, reply: "Web, Web3, or both is $0 extra. Same letters. Same year." },
-    { test: /free|white ?list|complimentary|creator/i, reply: "Every plan is billed by the year. Pick Claim, OFS One, or Abyss One and check out with Stripe." },
+    { test: /free|white ?list|complimentary|creator/i, reply: "Claim ($10) and OFS One ($99) are billed by the year. Abyss One is $299 a month. Pick a plan and check out with Stripe." },
     { test: /stripe|pay|card|checkout/i, reply: "Products → Checkout → Pay. Claim, OFS One, and Abyss One each have their own Stripe link." },
-    { test: /verify|password|sign ?in|login/i, reply: "Create a password, then open the one-time link sent to your inbox. The token is hashed, one use, 20 minutes." },
+    { test: /verify|confirm|password|sign ?in|login|account/i, reply: "Tap Sign in, create an account with your email and a password, then open the confirmation link Netlify Identity emails you. After that, sign in. Forgot password sends a reset link." },
+    { test: /whois|registrar|porkbun|register|available|taken/i, reply: "After payment the name is registered for real at our registrar, Porkbun, with WHOIS privacy on. Availability is checked at checkout, so a taken name is caught before you pay." },
     { test: /error|broke|bug|fail|blank/i, reply: "If a page broke, stay here and tell me what you tapped. I can also open a message to support with the error attached." },
-    { test: /host|publish|live|domain/i, reply: "A real ICANN name. Site on HTTPS. Go Live writes the receipt. Bind and Reef are the vault — not required to launch." },
-    { test: /encrypt|pgp|tls|privacy|secure mail/i, reply: "Queued tickets are sealed with AES-256-GCM as OFS-MAIL/1. The body hash is SHA-256. Your mail app carries the letter over TLS. Verify links still have to be readable by that inbox." },
+    { test: /host|publish|live|domain/i, reply: "A real ICANN name, registered at Porkbun after payment with WHOIS privacy on. Site on HTTPS. Go Live writes the receipt. Bind and Reef are the vault — not required to launch." },
+    { test: /encrypt|pgp|tls|privacy|secure mail/i, reply: "WHOIS privacy is on for every name where the registry supports it. Queued tickets are sealed with AES-256-GCM as OFS-MAIL/1, and your mail app carries the letter over TLS. See the Privacy page for how account data is handled." },
   ];
 
   function answer(text) {
@@ -88,6 +89,7 @@
     const err = document.createElement("div");
     err.id = "ofs-err";
     err.hidden = true;
+    err.setAttribute("role", "alert");
     err.innerHTML = "<span></span><button type='button' id='ofs-err-route'>Route</button><button type='button' id='ofs-err-open'>Ask AI</button><button type='button' id='ofs-err-x'>Close</button>";
     document.body.appendChild(err);
 

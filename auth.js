@@ -154,48 +154,14 @@
     return { ok: true };
   }
 
+  // Legacy local verify/reset helpers below are kept only for the retired verify.html/reset.html/oauth.html
+  // scripts (netlify.toml redirects those pages to home.html). Accounts are Netlify Identity.
   function verifyUrl(email, raw) {
     const base = new URL("verify.html", location.href).href;
     const u = new URL(base);
     u.searchParams.set("e", norm(email));
     u.searchParams.set("t", raw);
     return u.href;
-  }
-
-  function mailVerify(email, raw) {
-    const link = verifyUrl(email, raw);
-    const body = "Only this inbox can finish the seat.\n\nOpen this link in the next 20 minutes:\n\n" + link + "\n\nIf you did not ask for this, ignore it.";
-    if (root.OFSMail) {
-      root.OFSMail.send({ route: "verify", user: norm(email), to: norm(email), subject: "Verify your OFS Domains seat", body });
-    } else {
-      location.href =
-        "mailto:" + encodeURIComponent(norm(email)) +
-        "?subject=" + encodeURIComponent("[OFS Verify] Verify your OFS Domains seat") +
-        "&body=" + encodeURIComponent(body);
-    }
-    return link;
-  }
-
-  async function issueReset(state, email, force) {
-    const e = norm(email);
-    const now = Date.now();
-    const current = state.members[e] || {};
-    if (!current.hash && !isCreator(e)) return { ok: false, error: "No password on that seat yet.", raw: null };
-    if (!force && current.lastReset && now - current.lastReset < RESEND_MS) {
-      return { ok: false, error: "Wait a minute before another reset.", raw: null };
-    }
-    const raw = randomToken();
-    const resetHash = await digest("ofs-reset:" + e + ":" + raw);
-    state.members[e] = {
-      ...current,
-      email: e,
-      resetHash,
-      resetExpires: now + TTL_MS,
-      resetTries: 0,
-      lastReset: now,
-    };
-    save(state);
-    return { ok: true, raw, expires: now + TTL_MS };
   }
 
   async function consumeReset(email, raw, password) {
@@ -222,14 +188,6 @@
     return { ok: true };
   }
 
-  function resetUrl(email, raw) {
-    const base = new URL("reset.html", location.href).href;
-    const u = new URL(base);
-    u.searchParams.set("e", norm(email));
-    u.searchParams.set("t", raw);
-    return u.href;
-  }
-
   root.OFSSeat = {
     CREATOR,
     TTL_MS,
@@ -248,10 +206,7 @@
     issueVerify,
     consumeToken,
     verifyUrl,
-    mailVerify,
-    issueReset,
     consumeReset,
-    resetUrl,
     listWhitelist,
     onSync,
   };

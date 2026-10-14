@@ -41,9 +41,16 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
     });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && !$("nav-menu").hidden) {
+      if (event.key !== "Escape") return;
+      if (!$("nav-menu").hidden) {
         closeNav();
         $("nav-trigger").focus();
+        return;
+      }
+      const open = !$("panel-signin").hidden ? "tab-signin" : !$("panel-notifications").hidden ? "tab-notifications" : "";
+      if (open) {
+        closePanels();
+        $(open).focus();
       }
     });
 
@@ -186,6 +193,21 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       }
     });
 
+    // Server rejects bodies over 60,000 bytes; drop the oldest turns until well under that.
+    const AI_BODY_BYTES = 50000;
+    const byteLength = (text) => new TextEncoder().encode(text).length;
+    function aiBody() {
+      let turns = aiHistory.slice(-8).map((m) => ({ role:m.role, content:m.content.slice(0, 6000), attachments:m.attachments || [] }));
+      let body = JSON.stringify({ messages:turns });
+      while (turns.length > 1 && byteLength(body) > AI_BODY_BYTES) {
+        turns = turns.slice(1);
+        // The server expects the thread to read from a user turn.
+        while (turns.length > 1 && turns[0].role !== "user") turns = turns.slice(1);
+        body = JSON.stringify({ messages:turns });
+      }
+      return body;
+    }
+
     async function askOFS(prompt) {
       const ready = aiPending.filter((item) => item.state === "ready");
       const clean = String(prompt || "").trim() || (ready.length ? "Please review the attached file" + (ready.length > 1 ? "s" : "") + " and tell me how they can help build my business." : "");
@@ -197,7 +219,8 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
         attached.textContent = "📎 " + ready.map((item) => item.file.name).join(", ");
         userMessage.appendChild(attached);
       }
-      aiHistory.push({ role:"user", content:clean, attachments:ready.map((item) => item.id) });
+      const userTurn = { role:"user", content:clean, attachments:ready.map((item) => item.id) };
+      aiHistory.push(userTurn);
       aiPending = aiPending.filter((item) => item.state !== "ready");
       renderAiFiles();
       aiPrompt.value = "";
@@ -222,10 +245,12 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
         const response = await fetch("/api/ofs-assistant", {
           method:"POST",
           headers:{ "Content-Type":"application/json" },
-          body:JSON.stringify({ messages:aiHistory.slice(-8).map((m) => ({ role:m.role, content:m.content.slice(0, 6000), attachments:m.attachments || [] })) }),
+          body:aiBody(),
         });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "The build desk is unavailable.");
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || typeof data.reply !== "string") {
+          throw new Error(data.error || (response.status === 413 ? "That conversation is too long. Refresh to start a new one." : "The build desk is unavailable. Try again."));
+        }
         clearInterval(tick);
         thinking.remove();
         addAiMessage("💡 Thought for " + elapsed(), "bot meta");
@@ -243,6 +268,9 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       } catch (error) {
         clearInterval(tick);
         thinking.remove();
+        // Drop the failed turn so a retry does not stack two user turns in a row.
+        const at = aiHistory.lastIndexOf(userTurn);
+        if (at !== -1) aiHistory.splice(at, 1);
         addAiMessage(error.message || "The build desk is unavailable. Try again.", "bot error");
       } finally {
         aiSend.dataset.busy = "";
@@ -256,7 +284,7 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       askOFS(aiPrompt.value);
     });
     aiPrompt.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" && !event.shiftKey) {
+      if (event.key === "Enter" && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
         event.preventDefault();
         aiForm.requestSubmit();
       }
@@ -301,7 +329,7 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       if (session && identityOperator) {
         $("tab-signin").textContent = "Profile";
         $("who").textContent = "Signed in as Creator · complimentary seat";
-        $("seat-note").textContent = "Inbox verified.";
+        $("seat-note").textContent = identityUser.confirmedAt ? "Inbox verified." : "";
         $("signed-in").classList.remove("hidden");
         $("signed-out").classList.add("hidden");
         paintBuys();
@@ -311,7 +339,7 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       if (session) {
         $("tab-signin").textContent = "Profile";
         $("who").textContent = "Signed in as " + publicName(session);
-        $("seat-note").textContent = "Inbox verified.";
+        $("seat-note").textContent = identityUser.confirmedAt ? "Inbox verified." : "";
         $("signed-in").classList.remove("hidden");
         $("signed-out").classList.add("hidden");
         paintBuys();
@@ -321,16 +349,37 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       $("tab-signin").textContent = "Sign in";
     }
 
-    function paintBuys() {
+    function vaultRows(rows) {
+      return rows.length
+        ? rows.map((r) => "<li><span>" + escapeHtml(r.label) + "<br><span class='mono'>" + escapeHtml(r.fqdn || "") + "</span></span><span>" + escapeHtml(r.pay) + "</span></li>").join("")
+        : "<li>Vault is empty.</li>";
+    }
+
+    // Prefer server purchase records; fall back to this browser's receipts for this account only (never "guest" rows).
+    let buysRun = 0;
+    async function paintBuys() {
       const ul = $("buy-list");
       if (!ul) return;
-      const rows = window.OFSPurchases ? OFSPurchases.forAccount() : [];
-      ul.innerHTML = rows.length
-        ? rows.map((r) => {
-            const pay = r.complimentary || r.due === 0 ? "free" : "$" + Number(r.due).toFixed(2);
-            return "<li><span>" + escapeHtml(r.label) + "<br><span class='mono'>" + escapeHtml(r.fqdn || "") + "</span></span><span>" + escapeHtml(pay) + "</span></li>";
-          }).join("")
-        : "<li>Vault is empty.</li>";
+      const run = ++buysRun;
+      const session = identityUser && S.norm(identityUser.email);
+      const local = window.OFSPurchases && session
+        ? OFSPurchases.load().filter((r) => r.email === session).map((r) => ({
+            label:r.label, fqdn:r.fqdn, pay:r.complimentary || r.due === 0 ? "free" : "$" + Number(r.due).toFixed(2),
+          }))
+        : [];
+      ul.innerHTML = vaultRows(local);
+      if (!session) return;
+      try {
+        const response = await fetch("/api/purchases", { headers:{ Accept:"application/json" } });
+        if (!response.ok) return;
+        const result = await response.json().catch(() => ({}));
+        if (run !== buysRun || !Array.isArray(result.purchases)) return;
+        ul.innerHTML = vaultRows(result.purchases.map((r) => ({
+          label:r.label || r.plan || "Purchase",
+          fqdn:r.fqdn,
+          pay:r.complimentary || !Number(r.amount_cents) ? "free" : "$" + (Number(r.amount_cents) / 100).toFixed(2),
+        })));
+      } catch (_) {}
     }
     if (S.onSync) S.onSync(() => { paintBuys(); });
 
@@ -379,7 +428,10 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
 
     $("form-broadcast").addEventListener("submit", async (event) => {
       event.preventDefault();
+      const form = event.currentTarget;
+      const send = form.querySelector("button[type=submit]");
       $("notice-err").textContent = "";
+      send.disabled = true;
       try {
         const response = await fetch("/api/notifications", {
           method:"POST",
@@ -388,9 +440,13 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
         });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(result.error || "Update could not be sent.");
-        event.currentTarget.reset();
-        await paintNotifications();
-      } catch (error) { $("notice-err").textContent = error.message; }
+        form.reset();
+      } catch (error) {
+        $("notice-err").textContent = error.message || "Update could not be sent.";
+        return;
+      } finally { send.disabled = false; }
+      // Refresh separately so a slow list never reads as a failed send.
+      paintNotifications();
     });
 
     document.addEventListener("mousedown", (e) => {

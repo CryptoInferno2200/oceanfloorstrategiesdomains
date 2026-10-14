@@ -9,8 +9,11 @@
   <meta property="og:title" content="OFS Domains" />
   <meta property="og:description" content="Claim. Generate. Go live. Both listings $0 extra." />
   <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.ofsdomains.com/" />
+  <meta property="og:image" content="https://www.ofsdomains.com/icon.svg" />
   <meta name="twitter:card" content="summary" />
   <title>OFS Domains — Claim. Generate. Go live.</title>
+  <link rel="canonical" href="https://www.ofsdomains.com/" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" />
   <link rel="preload" href="./auth.js" as="script" />
@@ -139,6 +142,10 @@
     .list button { border:0; background:transparent; color:var(--muted); cursor:pointer; font: inherit; font-size:12px; min-height:36px; padding:0 6px; }
     .mono { font-family: ui-monospace, monospace; font-size:12px; }
     .hidden { display:none !important; }
+    .sr-only { position:absolute !important; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+    .site-foot { margin-top:14px; font-size:13px; }
+    .site-foot a { color:var(--muted); }
+    .site-foot a:hover { color:var(--fg); }
   </style>
   <link rel="stylesheet" href="./reef-bg.css" />
   <link rel="stylesheet" href="./assets/css/intro.css" />
@@ -167,8 +174,8 @@
     </div>
     <div class="account" id="account">
       <div class="tabs">
-        <button type="button" id="tab-signin" aria-expanded="false">Sign in</button>
-        <button type="button" id="tab-notifications" class="hidden" aria-expanded="false">Notifications</button>
+        <button type="button" id="tab-signin" aria-expanded="false" aria-controls="panel-signin">Sign in</button>
+        <button type="button" id="tab-notifications" class="hidden" aria-expanded="false" aria-controls="panel-notifications">Notifications</button>
       </div>
       <div class="panel" id="panel-signin" hidden>
         <div id="signed-out">
@@ -241,7 +248,7 @@
         <div class="ai-files" id="ai-files" aria-live="polite"></div>
         <button type="button" class="ai-attach" id="ai-attach" aria-label="Attach files" title="Attach images, video, audio, documents, CSVs, zips — any file">+</button>
         <input type="file" id="ai-file-input" multiple hidden>
-        <label class="hidden" for="ai-prompt">Ask a question or describe what you want to build</label>
+        <label class="sr-only" for="ai-prompt">Ask a question or describe what you want to build</label>
         <textarea id="ai-prompt" rows="1" maxlength="6000" placeholder="A field guide for coastal trails…"></textarea>
         <button type="submit" id="ai-send" aria-label="Send request">
           <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="m3 9 11-5-3.4 10-2.1-4.5L3 9Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
@@ -294,6 +301,7 @@
       </article>
     </div>
     <p class="lead" style="margin-top:28px;font-size:13px">Publisher rights stay with the creator. No remix or duplication without consent. <a href="rights.html">Rights</a></p>
+    <footer class="lead site-foot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="rights.html">Rights</a></footer>
   </main>
   <script src="./mail.js"></script>
 <script src="./auth.js"></script>

@@ -48,6 +48,8 @@
     summary { cursor:pointer; color:var(--fg); }
     details ul { color:var(--muted); padding-left:18px; }
     .err { color:#ff9b8a; }
+    .review { margin-top:14px; padding:14px 16px; border-radius:12px; box-shadow:0 0 0 1px rgba(242,196,109,.45); }
+    .review .lead { margin:6px 0; }
     [hidden] { display:none !important; }
   </style>
   <link rel="stylesheet" href="./reef-bg.css" />
@@ -80,11 +82,11 @@
       <div class="k">What one press automates</div>
       <ol class="steps">
         <li class="done">Project idea — a product built around your everyday problem</li>
-        <li class="done">Name claim — a domain picked for the brand</li>
+        <li class="done">Name pick — a domain picked for the brand, confirmed available at checkout</li>
         <li class="done">Launch kit — pitch, social posts, email, checklist, keywords</li>
         <li class="done">Logo — an AI-designed mark</li>
         <li class="done">Web hosting — its own site at ofsdomains.com/s/&lt;name&gt;</li>
-        <li class="done">Publish — goes public after OFS One ($99)</li>
+        <li class="done">Publish — after you review it and pay OFS One ($99)</li>
       </ol>
     </div>
 
@@ -105,11 +107,11 @@
       <div class="k">Orchestrating</div>
       <ol class="steps" id="steps">
         <li data-step="idea">Shape the project idea</li>
-        <li data-step="name">Claim the name</li>
+        <li data-step="name">Pick a name</li>
         <li data-step="kit">Write the launch kit</li>
         <li data-step="logo">Design the logo</li>
         <li data-step="host">Host the site</li>
-        <li data-step="publish">Publish — OFS One $99 checkout</li>
+        <li data-step="publish">Review &amp; publish — you confirm before OFS One $99 checkout</li>
       </ol>
       <p class="lead err" id="run-error" hidden></p>
     </div>

@@ -2,15 +2,15 @@ function paint() {
       const rows = OFSHost.load();
       const list = document.getElementById("list");
       if (!rows.length) {
-        const empty = document.createElement("li"); empty.textContent = "No names hosted yet."; list.replaceChildren(empty); return;
+        const empty = document.createElement("li"); empty.textContent = "No previews saved on this device yet."; list.replaceChildren(empty); return;
       }
       list.replaceChildren(...rows.map((site) => {
         const row = document.createElement("li");
         const detail = document.createElement("span");
         const name = document.createTextNode(site.fqdn || "Unnamed site");
-        const meta = document.createElement("span"); meta.className = "k"; meta.textContent = (site.plan || "claim") + " · TLS";
+        const meta = document.createElement("span"); meta.className = "k"; meta.textContent = "Preview · this device only";
         detail.append(name, document.createElement("br"), meta);
-        const link = document.createElement("a"); link.href = OFSHost.path(site.fqdn); link.textContent = "Open site";
+        const link = document.createElement("a"); link.href = OFSHost.path(site.fqdn); link.textContent = "Open preview";
         row.append(detail, link); return row;
       }));
     }
@@ -25,5 +25,4 @@ function paint() {
       });
       if (out.ok) location.href = out.site.route;
     };
-    OFSHost.seed();
     paint();

@@ -10,7 +10,8 @@
     set(s, k, v) { try { s.setItem(k, v); } catch (_) {} },
     del(s, k) { try { s.removeItem(k); } catch (_) {} },
   };
-  const loaderSkipped = Boolean(store.get(sessionStorage, LOADER_KEY)) || /[?&]noloader\b/.test(location.search);
+  // Reduced motion skips the loader outright; everyone else sees it at most once per session.
+  const loaderSkipped = reduce || Boolean(store.get(sessionStorage, LOADER_KEY)) || /[?&]noloader\b/.test(location.search);
   root.classList.add(loaderSkipped ? "ofs-skip-loader" : "ofs-loading");
 
   let loaderDone = loaderSkipped;
@@ -23,7 +24,8 @@
     if (!el || loaderSkipped) { if (el) el.remove(); return; }
     const bar = el.querySelector(".ofs-depth i");
     const label = el.querySelector(".ofs-depth-label");
-    const MIN = reduce ? 600 : 2000, MAX = 7000;
+    // Never hold a ready page: the loader only covers real load time, capped at 600ms.
+    const MAX = 600;
     const start = performance.now();
     let pageReady = document.readyState === "complete", finished = false;
     window.addEventListener("load", () => { pageReady = true; }, { once: true });
@@ -44,10 +46,10 @@
       if (finished) return;
       const t = now - start;
       // Ease toward 90% while waiting, then complete once the page is ready.
-      const pct = Math.min(pageReady ? 100 : 90, (t / MIN) * 100);
+      const pct = Math.min(pageReady ? 100 : 90, (t / MAX) * 100);
       if (bar) bar.style.width = pct.toFixed(1) + "%";
       if (label) label.textContent = "Descending · " + Math.round(pct * 10).toLocaleString() + " m";
-      if ((pageReady && t >= MIN) || t >= MAX) return setTimeout(finish, 250);
+      if (pageReady || t >= MAX) return finish();
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
@@ -551,9 +553,8 @@
     document.querySelectorAll("[data-open-tour]").forEach((b) => b.addEventListener("click", (e) => { e.preventDefault(); openTour(); }));
     if ("speechSynthesis" in window) speechSynthesis.getVoices();
 
-    const wantsTour = /[?&]tour\b/.test(location.search);
-    const autoOpen = wantsTour || (store.get(localStorage, TOUR_HIDE_KEY) !== "1" && !store.get(sessionStorage, TOUR_SESSION_KEY));
-    if (autoOpen) whenLoaderDone(() => setTimeout(openTour, reduce ? 0 : 450));
+    // The tour (and its narration) only opens on request: the button, or ?tour in the URL.
+    if (/[?&]tour\b/.test(location.search)) whenLoaderDone(() => setTimeout(openTour, reduce ? 0 : 450));
   }
 
   window.OFSTour = { open: openTour };

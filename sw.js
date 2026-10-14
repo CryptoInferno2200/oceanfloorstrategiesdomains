@@ -1,4 +1,4 @@
-const CACHE = "ofs-domains-v35";
+const CACHE = "ofs-domains-v36";
 const PRECACHE = [
   "./home.html",
   "./auto.html",
@@ -11,14 +11,12 @@ const PRECACHE = [
   "./sauce.html",
   "./live.html",
   "./index.html",
-  "./verify.html",
-  "./reset.html",
   "./host.html",
   "./site.html",
   "./name.html",
-  "./oauth.html",
   "./privacy.html",
   "./rights.html",
+  "./terms.html",
   "./vault.html",
   "./workspace.html",
   "./auth.js",
@@ -42,15 +40,11 @@ const PRECACHE = [
   "./assets/js/index-inline-1.js",
   "./assets/js/live-inline-1.js",
   "./assets/js/name-inline-1.js",
-  "./assets/js/oauth-inline-1.js",
   "./assets/js/profile-inline-1.js",
   "./assets/js/profile-account.js",
-  "./assets/js/reset-inline-1.js",
   "./assets/js/site-inline-1.js",
   "./assets/js/sauce.js",
   "./assets/js/vault-inline-1.js",
-  "./assets/js/verify-callback.js",
-  "./assets/js/verify-inline-1.js",
   "./assets/js/workspace.js",
   "./assets/js/intro.js",
   "./assets/css/intro.css",
@@ -68,11 +62,26 @@ self.addEventListener("activate", (e) => {
     caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
   );
 });
+// Network-first for pages, scripts, and styles so fresh HTML never runs against stale JS; cache is the offline fallback.
+function networkFirst(request, fallback) {
+  return fetch(request).then((res) => {
+    if (res.ok && res.type === "basic") {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(fallback || request, copy));
+    }
+    return res;
+  }).catch(() => caches.match(fallback || request, { ignoreSearch: true }).then((h) => h || Response.error()));
+}
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/sandbox/")) return;
-  if (url.pathname.endsWith(".html") || url.pathname === "/") {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+  if (e.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/sandbox/") || url.pathname.startsWith("/s/")) return;
+  // "/" and "/index.html" serve home.html, so they share its cache entry.
+  if (url.pathname === "/" || url.pathname === "/index.html" || url.pathname === "/home.html") {
+    e.respondWith(networkFirst(e.request, "./home.html"));
+    return;
+  }
+  if (e.request.mode === "navigate" || /\.(html|js|mjs|css|webmanifest)$/.test(url.pathname)) {
+    e.respondWith(networkFirst(e.request));
     return;
   }
   e.respondWith(caches.match(e.request).then((h) => h || fetch(e.request)));

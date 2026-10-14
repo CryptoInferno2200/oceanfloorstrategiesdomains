@@ -4,7 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#041016" />
-  <title>Hosted site</title>
+  <meta name="robots" content="noindex" />
+  <title>Site preview</title>
   <style>
     :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; }
     * { box-sizing: border-box; }
@@ -15,15 +16,17 @@
     p { color:var(--muted); }
     img { max-width: 96px; border-radius: 16px; }
     a { color:#cfe4dc; }
+    .banner { margin:0 0 24px; padding:12px 16px; border-radius:12px; background:rgba(224,183,176,.12); box-shadow:0 0 0 1px rgba(238,244,242,.16); color:var(--fg); font-size:15px; }
   </style>
 </head>
 <body>
   <main>
-    <div class="k" id="host">Hosted on OFS Domains</div>
+    <p class="banner" role="note"><strong>Preview only — not a live hosted site.</strong> This page shows a preview saved on this device. Nothing is published on the public internet.</p>
+    <div class="k" id="host">Site preview</div>
     <h1 id="title">Site</h1>
     <p id="desc"></p>
     <p class="k" id="meta"></p>
-    <p><a href="host.html">Manage host</a> · <a href="name.html">Name only</a> · <a href="rights.html">Publisher rights</a></p>
+    <p><a href="host.html">Hosting preview</a> · <a href="name.html">Name only</a> · <a href="rights.html">Publisher rights</a></p>
     <p class="k">No remix or copy of this project without the publisher’s consent.</p>
   </main>
   <script src="./host.js"></script>

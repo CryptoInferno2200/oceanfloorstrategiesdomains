@@ -1,5 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /checkout.html
+Disallow: /site.html
+Disallow: /live.html
 Disallow: /oauth.html
 Disallow: /verify.html
 Disallow: /reset.html

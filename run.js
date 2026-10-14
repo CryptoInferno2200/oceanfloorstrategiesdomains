@@ -1,26 +1,26 @@
 /** OFS Domains — AI run loop. One sentence operates the platform. */
 (function (root) {
+  // First NOW steps run here; the rest happen at checkout and after payment.
   const STEPS = [
     "Read the brief",
-    "Pick the name",
-    "Choose the product",
-    "Set listing Both",
-    "Fill the profile",
-    "Route mail if needed",
-    "Seal the ticket",
-    "Issue the year",
-    "Write the site",
-    "Bind Haven + deed",
-    "Seed the plot",
-    "Go live or open pay",
+    "Suggest a name",
+    "Choose the plan and listing",
+    "Save the profile and draft site",
+    "Open checkout",
+    "Check availability with the registrar",
+    "After payment: register the name with WHOIS privacy",
+    "Track registration status in Profile",
+    "Haven / Web3 binding (preview)",
   ];
+  const NOW = 5;
+  const STOP = new Set(["a", "an", "the", "for", "my", "of", "and", "to", "with", "in", "on"]);
 
   function words(text) {
-    return String(text || "").toLowerCase().match(/[a-z0-9]+/g) || [];
+    return String(text || "").toLowerCase().match(/[a-z]+/g) || [];
   }
 
   function stem(sentence) {
-    return (words(sentence).slice(0, 2).join("") || "ofsname").slice(0, 18);
+    return (words(sentence).filter((w) => !STOP.has(w)).slice(0, 2).join("") || "ofsname").slice(0, 18);
   }
 
   function planOf(sentence) {
@@ -44,7 +44,7 @@
   function run(opts) {
     const sentence = opts.sentence || "A kelp forest dashboard for the Gulf.";
     const businessName = opts.businessName || "Kelp Chart";
-    const logoUrl = opts.logoUrl || "https://ofs.domains/mark.svg";
+    const logoUrl = opts.logoUrl || "./icon.svg";
     const description = opts.description || sentence;
     const plan = opts.plan || planOf(sentence);
     const listing = opts.listing || listingOf(sentence);
@@ -55,9 +55,9 @@
       : { due: free ? 0 : plan === "claim" ? 10 : plan === "abyss-one" ? 299 : 99, complimentary: free };
     const profile = { businessName, logoUrl, description, fqdn, plan, listing, at: Date.now() };
     try { localStorage.setItem("ofs.domains.profile.v1", JSON.stringify(profile)); } catch (_) {}
-    try { localStorage.setItem("ofs.domains.receipt.v1", JSON.stringify({ fqdn, bundle: plan, listing, due: quote.due, complimentary: free, paidAt: new Date().toISOString() })); } catch (_) {}
+    try { localStorage.setItem("ofs.domains.receipt.v1", JSON.stringify({ fqdn, bundle: plan, listing, due: quote.due, complimentary: free, status: "awaiting-payment", quotedAt: new Date().toISOString() })); } catch (_) {}
     if (typeof OFSHost !== "undefined") OFSHost.publish({ fqdn, businessName, logoUrl, description, plan, listing });
-    // The receipt is written by checkout once it is paid or complimentary, not here.
+    // Local quote only; the real receipt is recorded server-side after payment.
     // Saves the project to the signed-in account; guests keep the local copy only.
     // Resolves with the upgrade path when the account is over its project limit.
     let saved = Promise.resolve(null);
@@ -75,8 +75,8 @@
     const next = free || quote.due === 0
       ? "live.html?fqdn=" + encodeURIComponent(fqdn) + "&listing=" + listing + "&bundle=" + plan + "&due=0&complimentary=1"
       : "checkout.html?bundle=" + plan + "&listing=" + listing + "&fqdn=" + encodeURIComponent(fqdn);
-    return { fqdn, plan, listing, quote, profile, free, steps: STEPS, next, saved };
+    return { fqdn, plan, listing, quote, profile, free, steps: STEPS, now: NOW, next, saved };
   }
 
-  root.OFSRun = { STEPS, stem, planOf, listingOf, complimentary, run };
+  root.OFSRun = { STEPS, NOW, stem, planOf, listingOf, complimentary, run };
 })(window);

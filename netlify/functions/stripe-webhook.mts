@@ -1,15 +1,8 @@
 import type { Config } from "@netlify/functions";
 import { getDatabase } from "@netlify/database";
-
-const PLANS: Record<string, { label: string; cents: number }> = {
-  claim: { label: "Claim · name only", cents: 1000 },
-  one: { label: "OFS One", cents: 9900 },
-  "abyss-one": { label: "OFS Abyss One", cents: 29900 },
-};
-const MONTHLY = new Set(["abyss-one"]);
+import { PLANS, firstChargeCents, tldOf } from "../lib/pricing.mts";
 
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
-const TLD_CENTS: Record<string, number> = { com: 1099, net: 1199, org: 1099, app: 1399, ai: 7999, io: 3999, studio: 1999, store: 1399, gg: 1399 };
 const safeEqual = (a: string, b: string) => {
   if (a.length !== b.length) return false;
   let result = 0;
@@ -127,15 +120,14 @@ export default async (request: Request) => {
   const email = normalize(session.customer_details?.email || session.customer_email);
   const fqdn = normalize(session.metadata?.fqdn);
   const listing = normalize(session.metadata?.listing || "both");
-  const tld = fqdn.split(".").pop() || "com";
-  const expectedCents = product ? product.cents + Math.max(0, (TLD_CENTS[tld] || 1099) - (plan === "claim" ? 1000 : 1099)) : 0;
+  const expectedCents = firstChargeCents(plan, tldOf(fqdn));
   if (!product || Number(session.amount_total) !== expectedCents || !email || !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(fqdn) || !["web", "web3", "both"].includes(listing)) {
     return Response.json({ error: "Verified payment metadata is incomplete." }, { status: 422 });
   }
   const db = getDatabase();
   const purchasedAt = new Date(Number(session.created || Math.floor(Date.now() / 1000)) * 1000);
   const renewsAt = new Date(purchasedAt);
-  if (MONTHLY.has(plan)) renewsAt.setUTCMonth(renewsAt.getUTCMonth() + 1);
+  if (product.monthly) renewsAt.setUTCMonth(renewsAt.getUTCMonth() + 1);
   else renewsAt.setUTCFullYear(renewsAt.getUTCFullYear() + 1);
   const subscription = typeof session.subscription === "string" ? session.subscription : null;
   await db.sql`

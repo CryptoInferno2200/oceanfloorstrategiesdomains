@@ -57,7 +57,7 @@
     try { localStorage.setItem("ofs.domains.profile.v1", JSON.stringify(profile)); } catch (_) {}
     try { localStorage.setItem("ofs.domains.receipt.v1", JSON.stringify({ fqdn, bundle: plan, listing, due: quote.due, complimentary: free, paidAt: new Date().toISOString() })); } catch (_) {}
     if (typeof OFSHost !== "undefined") OFSHost.publish({ fqdn, businessName, logoUrl, description, plan, listing });
-    if (typeof OFSPurchases !== "undefined") OFSPurchases.add({ fqdn, plan, listing, due: quote.due, complimentary: free });
+    // The receipt is written by checkout once it is paid or complimentary, not here.
     // Saves the project to the signed-in account; guests keep the local copy only.
     // Resolves with the upgrade path when the account is over its project limit.
     let saved = Promise.resolve(null);

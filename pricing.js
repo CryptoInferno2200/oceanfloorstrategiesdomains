@@ -1,4 +1,5 @@
-/** OFS Domains crush sheet. Register = renew = transfer. Dual listing $0. */
+/** OFS Domains crush sheet. Register = renew = transfer. Dual listing $0.
+ * Checkout charges from netlify/lib/pricing.mts; keep both sheets in step. */
 (function (root) {
   const TLD_YEAR = {
     com: 10.99, net: 11.99, org: 10.99, app: 13.99,
@@ -6,12 +7,6 @@
   };
   const COM_CREDIT = 10.99;
   const CLAIM = 10;
-
-  const STRIPE = {
-    claim: "https://buy.stripe.com/00waEZccQcY86kv198eEo0c",
-    one: "https://buy.stripe.com/8x214p1ycaQ08sDaJIeEo0d",
-    "abyss-one": "https://buy.stripe.com/cNieVf3Gk8HScITaJIeEo0e",
-  };
 
   const PLANS = {
     claim: {
@@ -149,5 +144,5 @@
   }
 
   const BUNDLES = { claim: PLANS.claim, one: PLANS.one, "abyss-one": PLANS["abyss-one"] };
-  root.OFSPrice = { TLD_YEAR, COM_CREDIT, CLAIM, STRIPE, PLANS, BUNDLES, money, cycleOf, priceOf, tldOf, tldYear, quote, parseName };
+  root.OFSPrice = { TLD_YEAR, COM_CREDIT, CLAIM, PLANS, BUNDLES, money, cycleOf, priceOf, tldOf, tldYear, quote, parseName };
 })(window);

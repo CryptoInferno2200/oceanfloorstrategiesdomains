@@ -74,7 +74,8 @@ function paintProjects(rows, purchases) {
       (settled ? "Continue" : "Checkout") + "</a>" +
       "<span class='row-meta'>" + escapeHtml(p.fqdn) + " · " + escapeHtml(stage) + (label ? " · " + escapeHtml(label) : "") +
       (p.updated_at ? " · updated " + escapeHtml(when(p.updated_at)) : "") + "</span>" +
-      (p.description ? "<span class='row-meta'>" + escapeHtml(p.description) + "</span>" : "") + "</li>";
+      (p.description ? "<span class='row-meta'>" + escapeHtml(p.description) + "</span>" : "") +
+      (p.created_at ? "<span class='row-meta'><a style='color:var(--fg)' href='workspace.html?fqdn=" + escapeHtml(encodeURIComponent(p.fqdn)) + "'>Open database + sandbox</a></span>" : "") + "</li>";
   }).join("");
 }
 

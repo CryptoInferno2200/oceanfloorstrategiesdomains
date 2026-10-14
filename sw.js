@@ -1,4 +1,4 @@
-const CACHE = "ofs-domains-v30";
+const CACHE = "ofs-domains-v31";
 const PRECACHE = [
   "./home.html",
   "./auto.html",
@@ -20,6 +20,7 @@ const PRECACHE = [
   "./privacy.html",
   "./rights.html",
   "./vault.html",
+  "./workspace.html",
   "./auth.js",
   "./host.js",
   "./mail.js",
@@ -49,6 +50,7 @@ const PRECACHE = [
   "./assets/js/sauce.js",
   "./assets/js/vault-inline-1.js",
   "./assets/js/verify-inline-1.js",
+  "./assets/js/workspace.js",
   "./reef-bg.css",
   "./manifest.webmanifest",
   "./icon.svg",
@@ -65,7 +67,7 @@ self.addEventListener("activate", (e) => {
 });
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
+  if (e.request.method !== "GET" || url.origin !== self.location.origin || url.pathname.startsWith("/api/") || url.pathname.startsWith("/sandbox/")) return;
   if (url.pathname.endsWith(".html") || url.pathname === "/") {
     e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
     return;

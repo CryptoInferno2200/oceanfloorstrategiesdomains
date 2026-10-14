@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#041016" />
+  <meta name="robots" content="noindex" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <title>OFS Domains — Workspace</title>
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.82); --line:rgba(238,244,242,.12); --bad:#e0b7b0; }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.45 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    header, main { max-width: 1180px; margin: 0 auto; padding: 24px 20px; }
+    main { padding-top: 0; }
+    nav { display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 0; }
+    nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
+    nav a.on { color:var(--fg); background:var(--card); }
+    h1 { font-family: Georgia, serif; font-size: 2rem; letter-spacing:-.03em; font-weight:400; margin: 8px 0 10px; }
+    h2 { font-family: Georgia, serif; font-weight:400; margin: 6px 0 10px; font-size: 1.35rem; }
+    p.lead { color: var(--muted); margin: 0; }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+    .card { margin-top:16px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); min-width: 0; }
+    .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .layout { display:grid; gap:16px; grid-template-columns: 1fr; }
+    @media (min-width: 960px) { .layout { grid-template-columns: 1fr 1fr; } }
+    select, input, textarea { border:0; border-radius:12px; padding:10px 12px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
+    textarea { width:100%; resize: vertical; }
+    textarea.code { min-height: 380px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; tab-size: 2; white-space: pre; }
+    textarea.json { min-height: 90px; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    button { min-height:44px; border:0; border-radius:12px; padding:0 16px; background:var(--fg); color:var(--bg); font: inherit; font-weight:600; cursor:pointer; }
+    button.ghost { background:transparent; color:var(--fg); box-shadow:0 0 0 1px var(--line); font-weight:500; }
+    button.tab { min-height:36px; padding:0 12px; background:transparent; color:var(--muted); box-shadow:0 0 0 1px var(--line); font-weight:500; border-radius:999px; font-size:13px; }
+    button.tab[aria-selected="true"] { color:var(--fg); background:#0c2630; }
+    button:disabled { opacity:.45; cursor:not-allowed; }
+    .spacer { flex:1; }
+    .status { font-size:13px; color:var(--muted); min-height: 1.4em; margin: 8px 0 0; }
+    .status.bad { color: var(--bad); }
+    iframe { width:100%; height: 460px; border:0; border-radius:12px; background:#fff; display:block; margin-top:10px; }
+    ul.rows { list-style:none; padding:0; margin: 10px 0 0; display:grid; gap:8px; }
+    ul.rows li { padding:10px 12px; border-radius:12px; box-shadow:inset 0 0 0 1px var(--line); font-size:14px; }
+    ul.rows li.empty { color:var(--muted); }
+    ul.rows pre { margin: 6px 0 0; font: 12px/1.45 ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-word; color: var(--fg); }
+    ul.rows .meta { display:flex; gap:8px; align-items:center; font-size:12px; color:var(--muted); }
+    ul.rows .meta button { min-height:30px; padding:0 10px; font-size:12px; }
+    .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+    .chips button { min-height:32px; font-size:13px; }
+    [hidden] { display:none !important; }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+  <header>
+    <div class="k">OFS Domains · Workspace</div>
+    <h1>Database + sandbox.</h1>
+    <p class="lead">Every project gets its own private database and a sandbox to build and test the site before it goes live.</p>
+    <nav>
+      <a href="home.html">Home</a>
+      <a href="auto.html">Auto</a>
+      <a href="profile.html">Profile</a>
+      <a class="on" href="workspace.html">Workspace</a>
+      <a href="sauce.html">Sauce</a>
+      <a href="live.html">Go live</a>
+    </nav>
+  </header>
+  <main>
+    <div class="card">
+      <div class="row">
+        <label class="k" for="project">Project</label>
+        <select id="project" disabled><option>Loading projects…</option></select>
+        <span class="spacer"></span>
+        <a id="golive" class="k" style="color:var(--fg)" href="live.html" hidden>Go live →</a>
+      </div>
+      <p class="status" id="project-status"></p>
+    </div>
+
+    <div class="layout" id="workspace" hidden>
+      <section class="card" aria-labelledby="sandbox-h">
+        <div class="k">Sandbox</div>
+        <h2 id="sandbox-h">Files</h2>
+        <div class="row" role="tablist" aria-label="Sandbox files">
+          <button class="tab" role="tab" data-file="index.html" aria-selected="true">index.html</button>
+          <button class="tab" role="tab" data-file="styles.css" aria-selected="false">styles.css</button>
+          <button class="tab" role="tab" data-file="app.js" aria-selected="false">app.js</button>
+        </div>
+        <textarea id="editor" class="code" spellcheck="false" aria-label="File contents" style="margin-top:10px"></textarea>
+        <div class="row" style="margin-top:10px">
+          <button id="save">Save + run</button>
+          <button id="reset" class="ghost">Reset to starter</button>
+        </div>
+        <p class="status" id="file-status">styles.css and app.js load automatically. Call <code>ofsdb</code> in app.js to use this project’s database.</p>
+      </section>
+
+      <section class="card" aria-labelledby="preview-h">
+        <div class="row">
+          <div><div class="k">Sandbox</div><h2 id="preview-h">Preview</h2></div>
+          <span class="spacer"></span>
+          <button id="reload" class="ghost">Reload</button>
+        </div>
+        <iframe id="preview" title="Sandbox preview" sandbox="allow-scripts allow-forms allow-modals allow-popups"></iframe>
+        <p class="status">Private to you. The preview runs isolated from your OFS account.</p>
+      </section>
+
+      <section class="card" aria-labelledby="db-h" style="grid-column: 1 / -1">
+        <div class="k">Database</div>
+        <h2 id="db-h">Collections</h2>
+        <div class="chips" id="collections"></div>
+        <div class="row" style="margin-top:12px">
+          <input id="collection" placeholder="collection name, e.g. signups" maxlength="40" aria-label="Collection" />
+          <button id="open" class="ghost">Open</button>
+          <span class="spacer"></span>
+          <button id="clear" class="ghost" disabled>Clear collection</button>
+        </div>
+        <label class="k" for="record" style="display:block;margin-top:14px">New record (JSON object)</label>
+        <textarea id="record" class="json" spellcheck="false" style="margin-top:6px">{ "email": "hello@example.com" }</textarea>
+        <div class="row" style="margin-top:8px"><button id="add" disabled>Add record</button></div>
+        <p class="status" id="db-status"></p>
+        <ul class="rows" id="records"></ul>
+      </section>
+    </div>
+  </main>
+  <script type="module" src="./assets/js/workspace.js"></script>
+  <script src="./reef-bg.js"></script>
+</body>
+</html>

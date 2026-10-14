@@ -3,6 +3,6 @@ Allow: /
 Disallow: /oauth.html
 Disallow: /verify.html
 Disallow: /reset.html
-Sitemap: ./sitemap.xml
+Sitemap: https://www.ofsdomains.com/sitemap.xml
 # Publisher rights: viewing is allowed. Remix, scrape-to-clone, and duplication need consent.
 # See rights.html

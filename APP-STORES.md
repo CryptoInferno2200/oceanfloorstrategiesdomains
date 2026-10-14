@@ -17,8 +17,30 @@ support email, 2–8 phone screenshots, and the 512×512 icon at `assets/icons/i
 
 ## Android (Google Play) — Trusted Web Activity
 
+> **"Unsafe app blocked — built for an older version of Android"**
+> Google Play Protect shows this when an Android package (APK/AAB) targets an old Android
+> API level. It is never caused by the website itself. The browser install from `app.html`
+> (Chrome or Samsung Internet → Install app) is built by the browser for the phone's current
+> Android version and does not get this warning. If an older APK was generated or downloaded,
+> uninstall it and either use the browser install or regenerate the package as below.
+
+Android target requirements (check https://developer.android.com/google/play/requirements/target-sdk
+before each release, these rise every year):
+
+| Setting           | Use                                         |
+|-------------------|---------------------------------------------|
+| `targetSdkVersion` | **36** (Android 16) — required for new apps and updates on Google Play |
+| `compileSdkVersion`| **36**                                      |
+| `minSdkVersion`    | 24 or higher (Android 7.0)                  |
+
+Anything older triggers Play Protect warnings on current phones (Galaxy S25, Pixel 9/10)
+and is rejected by Play Console.
+
 1. Go to https://www.pwabuilder.com, enter `https://www.ofsdomains.com`, choose **Android → Generate**.
-   Package ID suggestion: `com.ofsdomains.app`.
+   Package ID suggestion: `com.ofsdomains.app`. Open **All Settings** and confirm the target
+   SDK matches the table above (raise it if the default is lower). Always generate a fresh
+   package; do not reuse an old APK. For each update, bump the version code and re-sign with
+   the same key.
 2. Download the package. Keep the generated **signing key and passwords** somewhere safe —
    losing them means you can never update the app.
 3. The package includes an `assetlinks.json`. Publish it at

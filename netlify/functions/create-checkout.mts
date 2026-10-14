@@ -65,6 +65,28 @@ export default async (request: Request) => {
       return Response.json({ url: `${origin}/sauce.html?launched=${encodeURIComponent(sauce)}` }, { headers: { "Cache-Control": "no-store" } });
     }
   }
+  if (!sauce && user?.email) {
+    // Whitelisted seats never reach Stripe, even if the page priced them before it knew.
+    const db = getDatabase();
+    const email = normalize(user.email);
+    const [eligible] = await db.sql`SELECT email FROM identity_whitelist WHERE email = ${email}`;
+    if (eligible) {
+      const id = `comp-${crypto.randomUUID()}`;
+      const purchasedAt = new Date();
+      const renewsAt = new Date(purchasedAt);
+      renewsAt.setUTCFullYear(renewsAt.getUTCFullYear() + 1);
+      await db.sql`
+        INSERT INTO purchase_history
+          (id, user_email, fqdn, plan, label, listing, amount_cents, complimentary, status, purchased_at, renews_at)
+        VALUES
+          (${id}, ${email}, ${fqdn}, ${plan}, ${product.label}, ${listing}, ${0}, ${true}, ${"complimentary"}, ${purchasedAt.toISOString()}, ${renewsAt.toISOString()})
+        ON CONFLICT (id) DO NOTHING
+      `;
+      await queueRegistration(id, email, fqdn);
+      await attemptRegistration(id).catch((error) => console.error(`Registration for ${id} deferred`, error));
+      return Response.json({ url: `${origin}/live.html?fqdn=${encodeURIComponent(fqdn)}&id=${encodeURIComponent(id)}` }, { headers: { "Cache-Control": "no-store" } });
+    }
+  }
   const key = Netlify.env.get("STRIPE_SECRET_KEY");
   if (!key) return Response.json({ error: "Checkout is not configured." }, { status: 503 });
   const params = new URLSearchParams({

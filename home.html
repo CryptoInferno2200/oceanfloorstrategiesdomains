@@ -57,6 +57,11 @@
     .operator-settings summary::-webkit-details-marker { display:none; }
     .operator-settings summary::after { content:"+"; font-size:18px; line-height:1; }
     .operator-settings[open] summary::after { content:"−"; }
+    .whitelist-list { max-height:260px; overflow:auto; }
+    .whitelist-list li { gap:10px; align-items:center; }
+    .whitelist-list .wl-email { overflow-wrap:anywhere; }
+    .whitelist-list .wl-off { opacity:.6; }
+    .whitelist-list button { flex:none; padding:6px 12px; font-size:13px; }
     .operator-settings summary:focus-visible { outline:2px solid #cfe4dc; outline-offset:3px; border-radius:4px; }
     header, main { max-width: 760px; margin: 0 auto; padding: 12px 20px 28px; }
     header { padding-top: 8px; }
@@ -220,6 +225,17 @@
           <p class="lead" id="seat-note" style="margin:8px 0 0;font-size:14px"></p>
           <p class="k" style="margin-top:14px">Vault</p>
           <ul class="list" id="buy-list"></ul>
+          <form id="form-whitelist" class="hidden" novalidate>
+            <div class="operator-settings">
+              <p class="k">Whitelist · free access</p>
+              <p class="lead" style="margin:6px 0 0;font-size:13px">Whitelisted emails skip payment for every plan, name, and launch.</p>
+              <label for="whitelist-email">Email to whitelist</label>
+              <input id="whitelist-email" type="email" autocomplete="off" required />
+              <button class="btn" type="submit" style="margin-top:12px;width:100%">Add to whitelist</button>
+              <p class="err" id="whitelist-err" role="alert"></p>
+              <ul class="list whitelist-list" id="whitelist-list" aria-live="polite"></ul>
+            </div>
+          </form>
           <a class="btn ghost" href="profile.html" style="margin-top:12px;width:100%;text-align:center">Open full profile</a>
           <button class="btn ghost" type="button" id="do-out" style="margin-top:12px;width:100%">Sign out</button>
         </div>

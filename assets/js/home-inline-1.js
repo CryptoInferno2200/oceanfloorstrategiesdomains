@@ -453,9 +453,15 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
         $("seat-note").textContent = identityUser.confirmedAt ? "Inbox verified." : "";
         $("signed-in").classList.remove("hidden");
         $("signed-out").classList.add("hidden");
+        $("form-whitelist").classList.remove("hidden");
         paintBuys();
+        paintWhitelist();
         return;
       }
+
+      // Only the operator sees the whitelist manager; the API refuses everyone else too.
+      $("form-whitelist").classList.add("hidden");
+      $("whitelist-list").innerHTML = "";
 
       if (session) {
         $("tab-signin").textContent = "Profile";
@@ -521,6 +527,68 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       span.textContent = String(value || "");
       return span.innerHTML;
     }
+
+    async function paintWhitelist() {
+      const list = $("whitelist-list");
+      $("whitelist-err").textContent = "";
+      try {
+        const response = await fetch("/api/whitelist", { headers:{ Accept:"application/json" } });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "Whitelist is unavailable.");
+        const rows = result.whitelist || [];
+        list.innerHTML = rows.map((row) => {
+          const email = escapeHtml(row.email).replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+          const since = new Date(row.active ? row.last_added_at : row.removed_at).toLocaleDateString(undefined, { year:"numeric", month:"short", day:"numeric" });
+          const note = row.operator ? "Creator · always free" : row.active ? "Free since " + since : "Removed " + since;
+          const action = row.operator ? ""
+            : row.active ? "<button class='btn ghost' type='button' data-wl-remove='" + email + "'>Remove</button>"
+            : "<button class='btn ghost' type='button' data-wl-add='" + email + "'>Restore</button>";
+          return "<li" + (row.active ? "" : " class='wl-off'") + "><span class='wl-email'>" + email + "<br><span class='k'>" + note + "</span></span>" + action + "</li>";
+        }).join("") || "<li class='lead'>No whitelisted emails yet.</li>";
+      } catch (error) {
+        $("whitelist-err").textContent = error.message;
+      }
+    }
+
+    async function changeWhitelist(method, email) {
+      $("whitelist-err").textContent = "";
+      const response = await fetch(method === "DELETE" ? "/api/whitelist?email=" + encodeURIComponent(email) : "/api/whitelist", {
+        method,
+        headers:{ "content-type":"application/json" },
+        body: method === "DELETE" ? undefined : JSON.stringify({ email }),
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.error || "Whitelist could not be updated.");
+      }
+      await paintWhitelist();
+    }
+
+    $("form-whitelist").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const input = $("whitelist-email");
+      const email = S.norm(input.value);
+      if (!S.valid(email)) { $("whitelist-err").textContent = "Enter a valid email."; return; }
+      const add = event.currentTarget.querySelector("button[type=submit]");
+      add.disabled = true;
+      try {
+        await changeWhitelist("POST", email);
+        input.value = "";
+      } catch (error) {
+        $("whitelist-err").textContent = error.message;
+      } finally { add.disabled = false; }
+    });
+
+    $("whitelist-list").addEventListener("click", async (event) => {
+      const button = event.target.closest("button[data-wl-remove], button[data-wl-add]");
+      if (!button) return;
+      const removing = button.hasAttribute("data-wl-remove");
+      const email = removing ? button.dataset.wlRemove : button.dataset.wlAdd;
+      if (removing && !confirm("Remove " + email + " from the whitelist? They will pay for new purchases.")) return;
+      button.disabled = true;
+      try { await changeWhitelist(removing ? "DELETE" : "POST", email); }
+      catch (error) { $("whitelist-err").textContent = error.message; button.disabled = false; }
+    });
 
     async function paintNotifications() {
       const list = $("notice-list");

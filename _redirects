@@ -1,10 +1,9 @@
-# Cloudflare Pages
-http://*  https://:splat  301!
-/  /home.html  302
-/index.html  /home.html  302
-/index  /home.html  302
-/vault  /vault.html  302
-/host  /host.html  302
-/name  /name.html  302
-/privacy  /privacy.html  302
-/rights  /rights.html  302
+# Cloudflare Pages. Netlify reads netlify.toml; these rules mirror it so both hosts serve the same URLs.
+/  /home.html  200
+/index.html  /home.html  200
+/index  /home.html  200
+/vault  /vault.html  200
+/host  /host.html  200
+/name  /name.html  200
+/privacy  /privacy.html  200
+/rights  /rights.html  200

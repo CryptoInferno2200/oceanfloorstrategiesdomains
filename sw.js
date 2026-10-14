@@ -1,4 +1,4 @@
-const CACHE = "ofs-domains-v34";
+const CACHE = "ofs-domains-v35";
 const PRECACHE = [
   "./home.html",
   "./auto.html",
@@ -49,6 +49,7 @@ const PRECACHE = [
   "./assets/js/site-inline-1.js",
   "./assets/js/sauce.js",
   "./assets/js/vault-inline-1.js",
+  "./assets/js/verify-callback.js",
   "./assets/js/verify-inline-1.js",
   "./assets/js/workspace.js",
   "./assets/js/intro.js",

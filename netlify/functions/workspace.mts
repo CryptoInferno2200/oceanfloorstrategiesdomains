@@ -1,7 +1,7 @@
 import type { Config, Context } from "@netlify/functions";
 import { getDatabase } from "@netlify/database";
 import { rejectCrossOrigin } from "../lib/http.mts";
-import { COLLECTION, FILES, MAX_FILE_BYTES, MAX_RECORDS, MAX_RECORD_BYTES, loadFiles, ownedProject, starterFiles } from "../lib/workspace.mts";
+import { COLLECTION, FILES, MAX_FILE_BYTES, MAX_RECORDS, MAX_RECORD_BYTES, loadFiles, ownedProject, starterFiles, transaction } from "../lib/workspace.mts";
 
 // Per-project workspace: sandbox files plus a private record store, owner only.
 function json(body: unknown, status = 200) {
@@ -9,6 +9,26 @@ function json(body: unknown, status = 200) {
 }
 
 const bytes = (value: string) => new TextEncoder().encode(value).byteLength;
+const WRITES_PER_HOUR = 600;
+
+async function identityHash(value: string) {
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+  return [...digest].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+// Counts one record write against the account's hourly budget; true when the budget is spent.
+async function writeLimited(db: ReturnType<typeof getDatabase>, email: string) {
+  const bucket = new Date();
+  bucket.setUTCMinutes(0, 0, 0);
+  const [usage] = await db.sql`
+    INSERT INTO ai_rate_limits (identity_key, window_start, request_count)
+    VALUES (${await identityHash("ws:" + email)}, ${bucket.toISOString()}, 1)
+    ON CONFLICT (identity_key, window_start)
+    DO UPDATE SET request_count = ai_rate_limits.request_count + 1
+    RETURNING request_count
+  `;
+  return Number(usage?.request_count || 0) > WRITES_PER_HOUR;
+}
 
 function recordData(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return { error: "Record data must be a JSON object." };
@@ -74,6 +94,8 @@ export default async (request: Request, context: Context) => {
       return json({ records: rows });
     }
 
+    if (!["POST", "PATCH", "DELETE"].includes(request.method)) return new Response("Method not allowed", { status: 405 });
+    if (await writeLimited(db, email)) return json({ error: `Record writes are capped at ${WRITES_PER_HOUR} an hour. Try again later.` }, 429);
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
     if (request.method === "POST") {
@@ -81,13 +103,20 @@ export default async (request: Request, context: Context) => {
       if (!COLLECTION.test(collection)) return json({ error: "Collection names use a-z, 0-9, - and _." }, 400);
       const data = recordData(body.data);
       if (data.error) return json({ error: data.error }, 400);
-      const [counted] = await db.sql`SELECT COUNT(*)::int AS total FROM project_records WHERE project_id = ${project.id}`;
-      if (Number(counted?.total || 0) >= MAX_RECORDS) return json({ error: `This project holds up to ${MAX_RECORDS} records.` }, 409);
-      const [row] = await db.sql`
-        INSERT INTO project_records (project_id, collection, data)
-        VALUES (${project.id}, ${collection}, ${data.text}::jsonb)
-        RETURNING id, collection, data, created_at, updated_at
-      `;
+      // The per-project lock makes the count and the insert one step, so parallel adds can't pass the cap.
+      const row = await transaction(db, async (query) => {
+        await query("SELECT pg_advisory_xact_lock(hashtext($1))", ["records:" + project.id]);
+        const [counted] = await query("SELECT COUNT(*)::int AS total FROM project_records WHERE project_id = $1", [project.id]);
+        if (Number(counted?.total || 0) >= MAX_RECORDS) return null;
+        const [inserted] = await query(
+          `INSERT INTO project_records (project_id, collection, data)
+           VALUES ($1, $2, $3::jsonb)
+           RETURNING id, collection, data, created_at, updated_at`,
+          [project.id, collection, data.text],
+        );
+        return inserted;
+      });
+      if (!row) return json({ error: `This project holds up to ${MAX_RECORDS} records.` }, 409);
       return json({ record: row }, 201);
     }
 

@@ -1,14 +1,14 @@
-/** OFS Domains — sync sources with per-source error handling. */
+/** OFS Domains — status of data saved on this device, with per-source error handling. */
 (function (root) {
   const KEY = "ofs.domains.sync.v1";
   const ERR = "ofs.domains.sync.err.v1";
 
   const SOURCES = [
-    { id: "seat", name: "Seat", blurb: "Account seat." },
-    { id: "vault", name: "Vault", blurb: "Purchase history for this seat." },
-    { id: "host", name: "Host", blurb: "Names published on this project." },
-    { id: "profile", name: "Profile", blurb: "Launch kit fields." },
-    { id: "receipt", name: "Receipt", blurb: "Last live receipt." },
+    { id: "seat", name: "Seat", blurb: "Seat cache on this device." },
+    { id: "vault", name: "Vault", blurb: "Receipts cached on this device." },
+    { id: "host", name: "Host", blurb: "Hosting previews saved on this device." },
+    { id: "profile", name: "Profile", blurb: "Launch kit fields saved on this device." },
+    { id: "receipt", name: "Receipt", blurb: "Last quote saved on this device." },
   ];
 
   function read(key, fallback) {
@@ -81,9 +81,6 @@
     } catch (err) {
       const message = err && err.message ? err.message : String(err);
       setError(id, message);
-      if (root.OFSMail && typeof root.OFSMail.send === "function") {
-        try { root.OFSMail.send({ route: "error", subject: "Sync " + id, body: message, open: false }); } catch (_) {}
-      }
       return { id, ok: false, at: new Date().toISOString(), data: null, error: message };
     }
   }

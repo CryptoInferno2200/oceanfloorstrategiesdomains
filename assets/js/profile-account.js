@@ -1,8 +1,8 @@
 import { getUser } from "https://esm.sh/@netlify/identity@1.2.0";
 
 const $ = (id) => document.getElementById(id);
-const DEMO_DESCRIPTION = "Live kelp cover for the Gulf. Hosted on OFS Domains.";
 const SETTLED = new Set(["paid", "complimentary"]);
+const REGISTRATION = { registered: "Registered", queued: "Registering…", retrying: "Registering…", failed: "Needs attention" };
 
 function escapeHtml(value) {
   const span = document.createElement("span");
@@ -26,40 +26,43 @@ function localPurchases(email) {
   return window.OFSPurchases ? OFSPurchases.forAccount(email) : [];
 }
 
-function localProjects() {
+// Hosting previews saved in this browser. Shown separately; they are not account projects.
+function paintPreviews() {
   const sites = window.OFSHost ? OFSHost.load() : [];
-  return sites
-    .filter((site) => !(site.fqdn === "kelpchart.com" && site.description === DEMO_DESCRIPTION))
-    .map((site) => ({
-      fqdn: site.fqdn,
-      name: site.businessName,
-      description: site.description,
-      plan: site.plan,
-      listing: site.listing,
-      updated_at: site.publishedAt,
-    }));
+  $("previews-card").hidden = !sites.length;
+  $("previews").innerHTML = sites.map((site) => {
+    const href = window.OFSHost ? OFSHost.path(site.fqdn) : "site.html?n=" + encodeURIComponent(site.fqdn);
+    return "<li><strong>" + escapeHtml(site.businessName || site.fqdn) + "</strong><a class='row-side' style='color:var(--fg)' href='" + escapeHtml(href) + "'>Open preview</a>" +
+      "<span class='row-meta'>" + escapeHtml(site.fqdn) + " · preview on this device" +
+      (site.publishedAt ? " · saved " + escapeHtml(when(site.publishedAt)) : "") + "</span></li>";
+  }).join("");
 }
 
-function paintPurchases(rows, remote) {
+function paintPurchases(rows, remote, signedIn = true) {
   const ul = $("history");
   if (!rows.length) {
-    ul.innerHTML = "<li class='empty'>No purchases yet. Claim, OFS One, Abyss One, and complimentary services appear here.</li>";
+    ul.innerHTML = signedIn
+      ? "<li class='empty'>No purchases yet. Claim, OFS One, Abyss One, and complimentary services appear here.</li>"
+      : "<li class='empty'>Sign in to see your purchase history.</li>";
     return;
   }
   ul.innerHTML = rows.map((r) => {
     const due = remote ? Number(r.amount_cents || 0) / 100 : Number(r.due || 0);
     const pay = r.complimentary || due === 0 ? "Complimentary" : "$" + due.toFixed(2);
     const renewal = r.renews_at ? " · renews " + when(r.renews_at) : "";
+    const registration = remote && REGISTRATION[r.registration_status] ? " · " + REGISTRATION[r.registration_status] : "";
     return "<li><strong>" + escapeHtml(r.label) + "</strong><span class='row-side'>" + escapeHtml(pay) + "</span>" +
       "<span class='row-meta'>" + escapeHtml(r.fqdn || "Account service") + " · " + escapeHtml(r.status) + " · " +
-      escapeHtml(when(r.purchased_at || r.at)) + escapeHtml(renewal) + "</span></li>";
+      escapeHtml(when(r.purchased_at || r.at)) + escapeHtml(renewal) + escapeHtml(registration) + "</span></li>";
   }).join("");
 }
 
-function paintProjects(rows, purchases) {
+function paintProjects(rows, purchases, signedIn = true) {
   const ul = $("projects");
   if (!rows.length) {
-    ul.innerHTML = "<li class='empty'>No projects yet. Describe one on the Home build desk or in Auto to get started.</li>";
+    ul.innerHTML = signedIn
+      ? "<li class='empty'>No projects yet. Describe one on the Home build desk or in Auto to get started.</li>"
+      : "<li class='empty'>Sign in to see your projects.</li>";
     return;
   }
   const paid = new Set(purchases.filter((p) => SETTLED.has(p.status)).map((p) => p.fqdn));
@@ -75,7 +78,9 @@ function paintProjects(rows, purchases) {
       "<span class='row-meta'>" + escapeHtml(p.fqdn) + " · " + escapeHtml(stage) + (label ? " · " + escapeHtml(label) : "") +
       (p.updated_at ? " · updated " + escapeHtml(when(p.updated_at)) : "") + "</span>" +
       (p.description ? "<span class='row-meta'>" + escapeHtml(p.description) + "</span>" : "") +
-      (p.created_at ? "<span class='row-meta'><a style='color:var(--fg)' href='workspace.html?fqdn=" + escapeHtml(encodeURIComponent(p.fqdn)) + "'>Open database + sandbox</a></span>" : "") + "</li>";
+      (p.created_at ? "<span class='row-meta'><a style='color:var(--fg)' href='workspace.html?fqdn=" + escapeHtml(encodeURIComponent(p.fqdn)) + "'>Open database + sandbox</a></span>" : "") +
+      "<span class='row-meta'><button type='button' class='row-del' data-delete-fqdn='" + escapeHtml(p.fqdn) + "'" +
+      (p.id != null ? " data-delete-id='" + escapeHtml(p.id) + "'" : "") + ">Delete project</button></span></li>";
   }).join("");
 }
 
@@ -91,9 +96,9 @@ async function load() {
     $("account-name").textContent = "You’re not signed in";
     $("vault-who").textContent = "Sign in to load your purchase history and projects across devices. Showing what’s saved on this device.";
     $("account-signin").hidden = false;
-    const purchases = localPurchases();
-    paintPurchases(purchases, false);
-    paintProjects(localProjects(), purchases);
+    paintPurchases([], false, false);
+    paintProjects([], [], false);
+    paintPreviews();
     return;
   }
 
@@ -114,15 +119,47 @@ async function load() {
   paintPurchases(purchases, remotePurchases);
   $("history-note").textContent = remotePurchases
     ? "Every paid and complimentary service on this account."
-    : "Showing this device’s saved receipts until sync is available.";
+    : "Your account history could not load. Showing receipts saved on this device.";
 
-  const seen = new Set();
-  const projects = (projectResult.status === "fulfilled" ? projectResult.value : [])
-    .concat(localProjects())
-    .filter((p) => p.fqdn && !seen.has(p.fqdn) && seen.add(p.fqdn));
+  const projects = (projectResult.status === "fulfilled" ? projectResult.value : []).filter((p) => p.fqdn);
   paintProjects(projects, purchases);
-  if (projectResult.status !== "fulfilled") $("projects-note").textContent = "Showing projects saved on this device until sync is available.";
+  $("projects-note").textContent = projectResult.status === "fulfilled"
+    ? "Sites and apps you started from the build desk or Auto."
+    : "Your projects could not load. Use Refresh account data to try again.";
+  paintPreviews();
 }
+
+async function deleteProject(button) {
+  const fqdn = button.getAttribute("data-delete-fqdn") || "";
+  const id = button.getAttribute("data-delete-id") || "";
+  if (!window.confirm("Delete the project " + fqdn + "? Its workspace records and sandbox files are removed too. Purchases are not affected.")) return;
+  button.disabled = true;
+  $("projects-err").textContent = "";
+  try {
+    const response = await fetch("/api/projects", {
+      method: "DELETE",
+      headers: { "content-type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(id ? { id } : { fqdn }),
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || "Project could not be deleted.");
+    }
+    await load();
+  } catch (error) {
+    button.disabled = false;
+    $("projects-err").textContent = error && error.message ? error.message : "Project could not be deleted.";
+  }
+}
+
+$("projects").addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-delete-fqdn]");
+  if (button) deleteProject(button);
+});
+
+window.addEventListener("ofs-profile-refresh", () => {
+  load().catch(() => {});
+});
 
 load().catch(() => {
   $("account-name").textContent = "Profile";

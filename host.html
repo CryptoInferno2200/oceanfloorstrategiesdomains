@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#041016" />
-  <title>OFS Domains — Hosting</title>
+  <title>OFS Domains — Hosting preview</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" />
   <style>
@@ -32,14 +32,15 @@
 <canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
 
   <header>
-    <div class="k">Hosting route</div>
-    <h1>Names live here.</h1>
-    <p class="lead">Claim a name. This project hosts the site. HTTPS is on. Custom DNS ALIAS points at this host later.</p>
+    <div class="k">Hosting preview</div>
+    <h1>Preview a site for your name.</h1>
+    <p class="lead"><strong>Preview only.</strong> Publishing here saves a preview on this device only — nothing is served on the public internet and no DNS or certificate is set up. Real hosting comes with OFS One or Sauce, at <code>/s/&lt;slug&gt;</code> on ofsdomains.com or on your own name by pointing its DNS at the site.</p>
     <nav>
       <a href="home.html">Home</a>
       <a href="auto.html">Auto</a>
       <a href="bundle.html">Products</a>
       <a href="profile.html">Profile</a>
+      <a href="workspace.html">Workspace</a>
       <a href="sauce.html">Sauce</a>
       <a href="vault.html">Vault</a>
       <a href="bind.html">Bind</a>
@@ -50,15 +51,15 @@
   <main>
     <form class="card" id="form">
       <label for="fqdn">Name</label>
-      <input id="fqdn" required placeholder="kelpchart.com" value="kelpchart.com" />
+      <input id="fqdn" required placeholder="yourname.com" autocomplete="off" />
       <label for="businessName">Business</label>
-      <input id="businessName" required value="Kelp Chart" />
+      <input id="businessName" required placeholder="Your business" />
       <label for="description">What this site is</label>
-      <textarea id="description" required>Live kelp cover for the Gulf.</textarea>
-      <button type="submit" style="margin-top:16px">Publish on this host</button>
+      <textarea id="description" required placeholder="What you do, in one breath."></textarea>
+      <button type="submit" style="margin-top:16px">Save preview on this device</button>
     </form>
     <div class="card">
-      <div class="k">On this host</div>
+      <div class="k">Previews on this device</div>
       <ul class="list" id="list"></ul>
     </div>
   </main>

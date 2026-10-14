@@ -29,10 +29,19 @@
     return OFSSeat.norm(OFSSeat.load().session || "");
   }
 
+  function localId() {
+    try {
+      if (root.crypto && typeof root.crypto.randomUUID === "function") return "local-" + root.crypto.randomUUID();
+    } catch (_) {}
+    return "local-" + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  }
+
   async function add(opts) {
-    const email = OFSSeat && opts.email ? OFSSeat.norm(opts.email) : account();
+    const seat = typeof OFSSeat !== "undefined" ? OFSSeat : null;
+    const email = seat && opts.email ? seat.norm(opts.email) : account();
     const row = {
-      id: "p" + Date.now().toString(36),
+      // Local cache id only; the server generates the real purchase id.
+      id: localId(),
       email: email || "guest",
       fqdn: String(opts.fqdn || "").toLowerCase(),
       plan: opts.plan || "claim",
@@ -56,7 +65,6 @@
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            id: saved.id,
             fqdn: saved.fqdn,
             plan: saved.plan,
             label: saved.label,
@@ -84,9 +92,9 @@
 
   function forAccount(email) {
     const e = email ? String(email).toLowerCase() : account();
-    const rows = load();
-    if (!e) return rows;
-    return rows.filter((r) => r.email === e || r.email === "guest");
+    // Signed out: never show receipts saved for other accounts or guests on this device.
+    if (!e) return [];
+    return load().filter((r) => r.email === e);
   }
 
   root.OFSPurchases = { load, add, forAccount, remote, LABELS };

@@ -2,6 +2,7 @@ import type { Config } from "@netlify/functions";
 import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
 import { rejectCrossOrigin } from "../lib/http.mts";
+import { attemptRegistration, checkAvailability, queueRegistration } from "../lib/registrar.mts";
 
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
 const clean = (value: unknown, max = 160) => String(value || "").trim().slice(0, max);
@@ -20,11 +21,12 @@ export default async (request: Request) => {
 
   if (request.method === "GET") {
     const rows = await db.sql`
-      SELECT id, fqdn, plan, label, listing, amount_cents, complimentary, status,
-             purchased_at, renews_at
-      FROM purchase_history
-      WHERE user_email = ${email}
-      ORDER BY purchased_at DESC
+      SELECT p.id, p.fqdn, p.plan, p.label, p.listing, p.amount_cents, p.complimentary, p.status,
+             p.purchased_at, p.renews_at, r.status AS registration_status, r.registered_at
+      FROM purchase_history p
+      LEFT JOIN domain_registrations r ON r.purchase_id = p.id
+      WHERE p.user_email = ${email}
+      ORDER BY p.purchased_at DESC
       LIMIT 200
     `;
     return Response.json({ purchases: rows });
@@ -32,16 +34,25 @@ export default async (request: Request) => {
 
   if (request.method === "POST") {
     const body = await request.json().catch(() => ({})) as Record<string, unknown>;
-    const id = clean(body.id, 80);
+    // Receipt ids are minted here; a client-chosen id could collide with another seat's receipt.
+    const id = `comp-${crypto.randomUUID()}`;
     const plan = clean(body.plan, 40);
     const label = LABELS[plan];
     const fqdn = normalize(body.fqdn);
     const listing = clean(body.listing, 20) || "both";
-    if (!id || !PLANS.has(plan) || !label || !validDomain(fqdn) || !LISTINGS.has(listing)) {
+    if (!PLANS.has(plan) || !label || !validDomain(fqdn) || !LISTINGS.has(listing)) {
       return Response.json({ error: "Purchase details are invalid." }, { status: 400 });
     }
     const [eligible] = await db.sql`SELECT email FROM identity_whitelist WHERE email = ${email}`;
     if (!eligible) return Response.json({ error: "Paid purchases are recorded only after payment confirmation." }, { status: 403 });
+    const [owned] = await db.sql`
+      SELECT id FROM purchase_history
+      WHERE fqdn = ${fqdn} AND status IN ('paid', 'complimentary', 'pending')
+      LIMIT 1
+    `;
+    if (owned) return Response.json({ error: `${fqdn} is already claimed here.` }, { status: 409 });
+    const available = await checkAvailability(fqdn);
+    if (!available.ok) return Response.json({ error: available.error }, { status: available.status });
     const safePurchasedAt = new Date();
     const renewsAt = new Date(safePurchasedAt);
     renewsAt.setUTCFullYear(renewsAt.getUTCFullYear() + 1);
@@ -54,12 +65,16 @@ export default async (request: Request) => {
          ${safePurchasedAt.toISOString()}, ${renewsAt.toISOString()})
       ON CONFLICT (id) DO NOTHING
     `;
+    await queueRegistration(id, email, fqdn);
+    await attemptRegistration(id).catch((error) => console.error(`Registration for ${id} deferred`, error));
     const [row] = await db.sql`
-      SELECT id, fqdn, plan, label, listing, amount_cents, complimentary, status, purchased_at, renews_at
-      FROM purchase_history
-      WHERE id = ${id} AND user_email = ${email}
+      SELECT p.id, p.fqdn, p.plan, p.label, p.listing, p.amount_cents, p.complimentary, p.status, p.purchased_at, p.renews_at,
+             r.status AS registration_status, r.registered_at
+      FROM purchase_history p
+      LEFT JOIN domain_registrations r ON r.purchase_id = p.id
+      WHERE p.id = ${id} AND p.user_email = ${email}
     `;
-    if (!row) return Response.json({ error: "Purchase receipt ID is already in use." }, { status: 409 });
+    if (!row) return Response.json({ error: "Purchase could not be recorded." }, { status: 500 });
     return Response.json({ purchase: row }, { status: 201 });
   }
 

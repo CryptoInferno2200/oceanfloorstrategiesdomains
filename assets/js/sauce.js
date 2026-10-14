@@ -14,7 +14,7 @@ async function api(url, opts = {}) {
     location.href = "home.html?signin=1&next=sauce.html";
     throw new Error("Sign in to use the Sauce Button.");
   }
-  if (!response.ok) throw Object.assign(new Error(result.error || "Something went wrong."), { upgrade: result.upgrade });
+  if (!response.ok) throw Object.assign(new Error(result.error || "Something went wrong."), { upgrade: result.upgrade, status: response.status });
   return result;
 }
 
@@ -23,20 +23,53 @@ function step(name, state) {
   if (li) li.className = state;
 }
 
-async function publish(launch, button) {
+// Starts checkout only after the user confirms in the review panel. Checkout re-checks the name before charging.
+async function publish(launch, button, error) {
   button.disabled = true;
   button.textContent = "Opening secure checkout…";
+  error.hidden = true;
   try {
     const { url } = await api("/api/create-checkout", {
       method: "POST",
       body: JSON.stringify({ fqdn: launch.fqdn, plan: "one", listing: "both", sauce: launch.slug }),
     });
     location.href = url;
-  } catch (error) {
+  } catch (failure) {
     button.disabled = false;
     button.textContent = "Pay OFS One $99 and publish";
-    alert(error.message);
+    error.replaceChildren(failure.message);
+    if (failure.status === 409) {
+      // The name was taken since Sauce picked it. Nothing was charged; start a fresh run from the same problem.
+      const again = el("button", { type: "button", className: "btn ghost", textContent: "Regenerate with a new name" });
+      again.addEventListener("click", () => regenerate(launch));
+      error.append(" Nothing was charged. ", again);
+    }
+    error.hidden = false;
   }
+}
+
+function regenerate(launch) {
+  $("problem").value = launch.problem || "";
+  $("audience").value = launch.audience || "";
+  $("form").scrollIntoView({ behavior: "smooth" });
+  $("go").focus({ preventScroll: true });
+}
+
+function review(launch) {
+  const error = el("p", { className: "lead err", hidden: true });
+  const pay = el("button", { type: "button", textContent: "Pay OFS One $99 and publish" });
+  const cancel = el("button", { type: "button", className: "btn ghost", textContent: "Not yet" });
+  const panel = el("div", { className: "review", hidden: true },
+    el("div", { className: "k", textContent: "Review & publish" }),
+    el("p", { className: "lead", textContent: "Check the brief above and the site preview. Publishing claims " + launch.fqdn + " and makes /s/" + launch.slug + " public." }),
+    el("p", { className: "lead", textContent: "The name’s availability is confirmed at checkout. If it was registered elsewhere in the meantime, you won’t be charged and can regenerate." }),
+    el("div", { className: "row" }, pay, cancel),
+    error);
+  const open = el("button", { type: "button", textContent: "Review & publish" });
+  open.addEventListener("click", () => { panel.hidden = false; open.hidden = true; pay.focus(); });
+  cancel.addEventListener("click", () => { panel.hidden = true; open.hidden = false; });
+  pay.addEventListener("click", () => publish(launch, pay, error));
+  return { open, panel };
 }
 
 function card(launch) {
@@ -48,10 +81,11 @@ function card(launch) {
     : null;
   const actions = el("div", { className: "row" },
     el("a", { className: "btn ghost", href: "/s/" + launch.slug, target: "_blank", rel: "noopener", textContent: live ? "Open live site" : "Preview site" }));
+  let panel = null;
   if (!live) {
-    const pay = el("button", { type: "button", textContent: "Pay OFS One $99 and publish" });
-    pay.addEventListener("click", () => publish(launch, pay));
-    actions.prepend(pay);
+    const flow = review(launch);
+    actions.prepend(flow.open);
+    panel = flow.panel;
   }
   return el("article", { className: "card", id: "launch-" + launch.slug },
     el("div", { className: "launch" },
@@ -67,7 +101,8 @@ function card(launch) {
     section("Launch kit · launch-day checklist", kit.checklist),
     kit.email ? el("details", {}, el("summary", { textContent: "Launch kit · announcement email" }), el("p", { className: "lead", textContent: kit.email })) : null,
     section("Launch kit · SEO keywords", kit.keywords && [kit.keywords.join(", ")]),
-    actions);
+    actions,
+    panel);
 }
 
 async function loadLaunches() {
@@ -96,10 +131,9 @@ async function run(e) {
     current = "host"; step("host", "run");
     await loadLaunches();
     step("host", "done");
-    current = "publish"; step("publish", "run");
-    const button = document.querySelector(`#launch-${launch.slug} button`);
+    // Stop here: the user reviews the brief and preview, then confirms publishing from the card.
     $("launch-" + launch.slug)?.scrollIntoView({ behavior: "smooth" });
-    if (button) await publish(launch, button);
+    $("launch-" + launch.slug)?.querySelector("button")?.focus({ preventScroll: true });
   } catch (error) {
     step(current, "fail");
     if (current === "idea") { step("name", ""); step("kit", ""); }

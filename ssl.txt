@@ -2,14 +2,14 @@ OFS Domains — TLS
 
 SSL is $0. It is not a cart add-on.
 
-After DNS ALIAS/CNAME is live, the host mints the certificate with ACME.
-Cloudflare Pages, Netlify, and GitHub Pages all do this. No CSR. No PEM upload.
+After the DNS ALIAS/CNAME records point at Netlify, Netlify mints and renews
+the certificate with Let's Encrypt (ACME). No CSR. No PEM upload.
 
 What we set:
-- CAA    only Let's Encrypt, Google Trust, DigiCert may issue
+- CAA    only Let's Encrypt may issue (the authority Netlify uses)
 - HSTS   Strict-Transport-Security, 1 year, includeSubDomains, preload
-- HTTPS  http → https 301
-- iodef  faults to the operator inbox
+- HTTPS  http → https 301 (Netlify)
+- iodef  faults to hostmaster@ofsdomains.com
 
 Check:
   https://APEX

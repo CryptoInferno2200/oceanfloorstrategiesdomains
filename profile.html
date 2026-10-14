@@ -21,6 +21,7 @@
     .card { margin-top:16px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
     label { display:block; font-size:12px; color:var(--muted); margin: 12px 0 6px; }
     input, textarea, select { width:100%; border:0; border-radius:12px; padding:12px 14px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
+    input[type=checkbox] { width:auto; height:auto; padding:0; box-shadow:none; vertical-align:middle; margin-right:6px; }
     textarea { min-height: 88px; resize: vertical; }
     .grid { display:grid; gap:0 12px; grid-template-columns: 1fr; }
     @media (min-width: 560px) { .grid.two { grid-template-columns: 1fr 1fr; } }
@@ -37,6 +38,7 @@
     ul.rows li.empty { display:block; color:var(--muted); }
     a.ghost-link { display:block; margin-top:12px; padding:12px 14px; border-radius:12px; text-align:center; color:var(--fg); text-decoration:none; font-size:14px; box-shadow:0 0 0 1px var(--line); }
     a.ghost-link[hidden] { display:none; }
+    button.row-del { width:auto; height:auto; margin:0; padding:4px 10px; border-radius:999px; background:transparent; color:#e0b7b0; font-weight:500; font-size:12px; box-shadow:0 0 0 1px var(--line); }
   </style>
   <link rel="stylesheet" href="./reef-bg.css" />
 </head>
@@ -80,22 +82,27 @@
       <h2 style="font-family:Georgia,serif;font-weight:400;margin:8px 0">Projects in development</h2>
       <p class="lead" style="margin:8px 0 0" id="projects-note">Sites and apps you started from the build desk or Auto.</p>
       <ul id="projects" class="rows"></ul>
+      <p class="miss" id="projects-err" role="status"></p>
       <a class="ghost-link" href="auto.html">Start a new project</a>
     </div>
+    <div class="card" id="previews-card" hidden>
+      <div class="k">Previews on this device</div>
+      <p class="lead" style="margin:8px 0 0">Hosting previews saved in this browser only. They are not account projects and are not published.</p>
+      <ul id="previews" class="rows"></ul>
+    </div>
     <div class="card" id="sync-sources">
-      <div class="k">Sync sources</div>
-      <p class="lead" style="margin:8px 0 0">Seat, vault, host, profile, and last receipt share one stamp.</p>
+      <div class="k">Saved data</div>
+      <p class="lead" style="margin:8px 0 0">What this device has cached. Refresh reloads your purchases and projects from your account and re-checks this device.</p>
       <ul id="source-list"></ul>
       <p class="miss" id="sync-err"></p>
-      <button type="button" id="do-sync" style="margin-top:12px">Sync now</button>
-      <button type="button" id="do-sync-retry" style="margin-top:8px;background:transparent;color:var(--fg);box-shadow:0 0 0 1px var(--line)">Retry failed</button>
+      <button type="button" id="do-sync" style="margin-top:12px">Refresh account data</button>
     </div>
     <form id="form" class="card">
       <div class="k">Required to go live</div>
       <label for="fqdn">Claimed name</label>
-      <input id="fqdn" name="fqdn" value="kelpchart.com" autocomplete="off" />
+      <input id="fqdn" name="fqdn" placeholder="yourname.com" autocomplete="off" />
       <label for="businessName">Business name</label>
-      <input id="businessName" name="businessName" placeholder="Kelp Chart" />
+      <input id="businessName" name="businessName" placeholder="Your business" />
       <label for="logoUrl">Logo URL</label>
       <input id="logoUrl" name="logoUrl" placeholder="https://…" />
       <label for="description">Description</label>
@@ -149,7 +156,7 @@
         <option value="web">Web only · $0 extra</option>
         <option value="web3">Web3 only · $0 extra</option>
       </select>
-      <label><input type="checkbox" id="brandToken" checked /> Create brand token in Haven (not a sale)</label>
+      <label><input type="checkbox" id="brandToken" disabled /> Create brand token in Haven — coming soon</label>
       <p class="miss" id="miss"></p>
       <button type="submit" id="go" disabled>Go live</button>
     </form>

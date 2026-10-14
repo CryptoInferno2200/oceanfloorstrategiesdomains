@@ -3,6 +3,8 @@ import OpenAI from "openai";
 import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
 import { projectLimitBlock } from "../lib/projects.mts";
+import { checkAvailability } from "../lib/registrar.mts";
+import { transaction } from "../lib/workspace.mts";
 
 // Sauce: one everyday problem → idea, name, launch kit, hosted site. OFS One up front, OFS keeps 50% of proceeds.
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
@@ -60,15 +62,41 @@ function shapeBrief(raw: Record<string, any>) {
   };
 }
 
-async function claimName(db: ReturnType<typeof getDatabase>, candidates: string[], name: string) {
-  const options = candidates.filter((d) => validDomain(d) && TLDS.has(d.split(".").pop() || ""));
-  options.push(slugify(name).replace(/-/g, "") + ".com");
+// A name is free here when no launch holds it, the user has no project on it, and nobody has bought it through OFS.
+async function nameTaken(db: ReturnType<typeof getDatabase>, email: string, fqdn: string) {
+  const [row] = await db.sql`
+    SELECT EXISTS (SELECT 1 FROM sauce_launches WHERE fqdn = ${fqdn})
+      OR EXISTS (SELECT 1 FROM projects WHERE user_email = ${email} AND fqdn = ${fqdn})
+      OR EXISTS (SELECT 1 FROM purchase_history WHERE fqdn = ${fqdn} AND status IN ('paid', 'complimentary', 'pending')) AS taken
+  `;
+  return Boolean(row?.taken);
+}
+
+// Ordered names that are free here, ending with uniqueness-checked random .com fallbacks.
+async function nameCandidates(db: ReturnType<typeof getDatabase>, email: string, candidates: string[], name: string) {
+  const options = [...new Set([...candidates.filter((d) => validDomain(d) && TLDS.has(d.split(".").pop() || "")), slugify(name).replace(/-/g, "") + ".com"])];
+  const free: string[] = [];
   for (const fqdn of options) {
-    const [taken] = await db.sql`SELECT 1 FROM sauce_launches WHERE fqdn = ${fqdn} LIMIT 1`;
-    if (!taken) return fqdn;
+    if (!(await nameTaken(db, email, fqdn))) free.push(fqdn);
   }
-  const base = options[options.length - 1].replace(/\.com$/, "");
-  return `${base}${Math.floor(Math.random() * 900 + 100)}.com`;
+  const base = (slugify(name).replace(/-/g, "") || "sauce").slice(0, 50);
+  for (let i = 0; free.length < 3 && i < 8; i += 1) {
+    const fqdn = `${base}${Math.floor(Math.random() * 9000 + 1000)}.com`;
+    if (!free.includes(fqdn) && !(await nameTaken(db, email, fqdn))) free.push(fqdn);
+  }
+  return free;
+}
+
+// The registrar allows ~10 checks per 10 seconds, so check at most two names per generation.
+// Names the registrar rejects are dropped; anything it cannot answer (503 not configured, 429, 502) is re-checked at checkout.
+async function registrarOrder(names: string[]) {
+  const ordered = [...names];
+  for (let calls = 0; calls < 2 && ordered.length > 1; calls += 1) {
+    const result = await checkAvailability(ordered[0]);
+    if (result.ok || (result.status !== 409 && result.status !== 400)) break;
+    ordered.shift();
+  }
+  return ordered;
 }
 
 async function uniqueSlug(db: ReturnType<typeof getDatabase>, fqdn: string) {
@@ -90,7 +118,7 @@ export default async (req: Request, _context: Context) => {
 
   if (req.method === "GET") {
     const rows = await db.sql`
-      SELECT id, slug, fqdn, problem, audience, brief, logo_key IS NOT NULL AS has_logo, plan, revenue_share_pct, status, created_at, published_at
+      SELECT id, slug, fqdn, problem, audience, brief, (logo_key IS NOT NULL AND logo_key <> 'pending') AS has_logo, plan, revenue_share_pct, status, created_at, published_at
       FROM sauce_launches
       WHERE user_email = ${email}
       ORDER BY created_at DESC
@@ -111,6 +139,7 @@ export default async (req: Request, _context: Context) => {
   if (problem.length < 8) return json({ error: "Describe the everyday problem in a sentence or two." }, 400);
 
   // Every launch becomes a project, so it counts against the same free limit as /api/projects.
+  // Checked here to fail fast, then again under a lock right before the insert.
   const blocked = await projectLimitBlock(db, email);
   if (blocked) return json(blocked, 402);
 
@@ -174,28 +203,51 @@ Reply as JSON only:
     return json({ error: "Sauce could not shape the idea. Please try again." }, 502);
   }
 
-  // Names and slugs are unique; retry with fresh picks if another launch claims the same one first.
-  let launch: Record<string, any> | undefined;
-  let fqdn = "";
-  for (let attempt = 0; !launch; attempt++) {
-    fqdn = await claimName(db, brief.domains, brief.name);
-    const slug = await uniqueSlug(db, fqdn);
-    try {
-      [launch] = await db.sql`
-        INSERT INTO sauce_launches (slug, user_email, fqdn, problem, audience, brief, terms_accepted_at)
-        VALUES (${slug}, ${email}, ${fqdn}, ${problem}, ${audience}, ${JSON.stringify(brief)}::jsonb, NOW())
-        RETURNING id, slug, fqdn, problem, audience, brief, plan, revenue_share_pct, status, created_at
-      `;
-    } catch (error) {
-      if ((error as { code?: string }).code !== "23505" || attempt >= 2) throw error;
+  // The AI work is already paid for, so every failure from here returns JSON the page can show.
+  try {
+    let names = await registrarOrder(await nameCandidates(db, email, brief.domains, brief.name));
+    let slug = "";
+    for (let attempt = 0; attempt < 6 && names.length; attempt += 1) {
+      const fqdn = names[0];
+      slug ||= await uniqueSlug(db, fqdn);
+      try {
+        // The launch and its project land together. The per-account lock serializes the project-limit check with the insert.
+        const result = await transaction(db, async (query) => {
+          await query("SELECT pg_advisory_xact_lock(hashtext($1))", ["projects:" + email]);
+          const limit = await projectLimitBlock(db, email);
+          if (limit) return { limit };
+          const [launch] = await query(
+            `INSERT INTO sauce_launches (slug, user_email, fqdn, problem, audience, brief, terms_accepted_at)
+             VALUES ($1, $2, $3, $4, $5, $6::jsonb, NOW())
+             RETURNING id, slug, fqdn, problem, audience, brief, plan, revenue_share_pct, status, created_at`,
+            [slug, email, fqdn, problem, audience, JSON.stringify(brief)],
+          );
+          const [project] = await query(
+            `INSERT INTO projects (user_email, fqdn, name, description, plan, listing)
+             VALUES ($1, $2, $3, $4, 'one', 'both')
+             ON CONFLICT (user_email, fqdn) DO NOTHING
+             RETURNING id`,
+            [email, fqdn, brief.name, brief.tagline || brief.solution],
+          );
+          // Never overwrite a project the user already has on this name; roll back and take the next one.
+          if (!project) throw Object.assign(new Error("Project exists"), { code: "23505", constraint: "projects_user_email_fqdn_key" });
+          return { launch };
+        });
+        if (result.limit) return json(result.limit, 402);
+        return json({ launch: result.launch }, 201);
+      } catch (error) {
+        const { code, constraint } = error as { code?: string; constraint?: string };
+        if (code !== "23505") throw error;
+        // A slug clash only needs a fresh slug; anything else means the name was claimed first.
+        if (!String(constraint || "").includes("slug")) names = names.slice(1);
+        slug = "";
+      }
     }
+    return json({ error: "Sauce could not reserve a free name for this idea. Press the button again." }, 409);
+  } catch (error) {
+    console.error("Sauce launch save failed", error);
+    return json({ error: "Sauce shaped your idea but could not save it. Please try again." }, 500);
   }
-  await db.sql`
-    INSERT INTO projects (user_email, fqdn, name, description, plan, listing)
-    VALUES (${email}, ${fqdn}, ${brief.name}, ${brief.tagline || brief.solution}, ${"one"}, ${"both"})
-    ON CONFLICT (user_email, fqdn) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description, plan = EXCLUDED.plan, updated_at = NOW()
-  `;
-  return json({ launch }, 201);
 };
 
 export const config: Config = { path: "/api/sauce" };

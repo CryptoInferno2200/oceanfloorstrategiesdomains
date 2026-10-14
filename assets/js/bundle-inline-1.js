@@ -5,7 +5,7 @@ const ORDER = ["claim", "one", "abyss-one"];
       const art = document.createElement("article");
       art.className = "card" + (id === "one" ? " on" : "");
       art.innerHTML =
-        "<div class='k'>" + (id === "claim" ? "Name only" : id === "one" ? "Most names" : "Studios") + "</div>" +
+        "<div class='k'>" + (id === "claim" ? "Name only" : id === "one" ? "Most popular" : "Studios") + "</div>" +
         "<h2>" + p.name + "</h2>" +
         "<p class='price'>" + OFSPrice.money(OFSPrice.priceOf(p)) + "<span class='k'> / " + OFSPrice.cycleOf(p) + "</span></p>" +
         "<ul>" + (p.includes || []).map((x) => "<li>" + x + "</li>").join("") + "</ul>" +

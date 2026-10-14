@@ -1,11 +1,14 @@
-/** OFS Domains — in-project hosting route. Name → live site. */
+/** OFS Domains — hosting preview. Saves a name + site preview on this device only; nothing is served publicly.
+ *  Real hosting comes with OFS One / Sauce at /s/<slug> or by pointing the name's DNS at Netlify. */
 (function (root) {
   const KEY = "ofs.domains.host.v1";
+  // Older builds seeded this demo row on first visit; it is hidden so it never looks like a real site.
+  const LEGACY_DEMO = "Live kelp cover for the Gulf. Hosted on OFS Domains.";
 
   function load() {
     try {
       const raw = JSON.parse(localStorage.getItem(KEY) || "[]");
-      return Array.isArray(raw) ? raw : [];
+      return Array.isArray(raw) ? raw.filter((r) => r && !(r.fqdn === "kelpchart.com" && r.description === LEGACY_DEMO)) : [];
     } catch {
       return [];
     }
@@ -38,15 +41,8 @@
     return Object.assign(publish(typeof opts === "string" ? { fqdn: opts } : opts), { created: true });
   }
 
+  // Kept for callers that still invoke it; no demo data is created any more.
   function seed() {
-    if (load().length) return load();
-    publish({
-      fqdn: "kelpchart.com",
-      businessName: "Kelp Chart",
-      description: "Live kelp cover for the Gulf. Hosted on OFS Domains.",
-      plan: "claim",
-      listing: "both",
-    });
     return load();
   }
 
@@ -61,7 +57,7 @@
       plan: opts.plan || "claim",
       listing: opts.listing || "both",
       privacy: opts.privacy !== false,
-      ssl: true,
+      preview: true,
       route: path(fqdn),
       publishedAt: new Date().toISOString(),
     };

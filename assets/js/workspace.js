@@ -2,20 +2,23 @@ const $ = (id) => document.getElementById(id);
 const FILES = ["index.html", "styles.css", "app.js"];
 const COLLECTION = /^[a-z0-9][a-z0-9_-]{0,39}$/;
 
-const state = { fqdn: "", files: {}, active: "index.html", dirty: new Set(), saved: false, collection: "" };
+const state = { fqdn: "", frameFqdn: "", files: {}, active: "index.html", dirty: new Set(), saved: false, collection: "" };
+const signInUrl = () => "home.html?signin=1&next=" + encodeURIComponent(location.pathname.slice(1) + location.search);
 
-async function api(url, opts = {}) {
+// Bridge calls pass quiet: true so an expired session doesn't navigate away from unsaved work.
+async function api(url, opts = {}, quiet = false) {
   const response = await fetch(url, { headers: { "content-type": "application/json", Accept: "application/json" }, ...opts });
   const result = await response.json().catch(() => ({}));
   if (response.status === 401) {
-    location.href = "home.html?signin=1&next=" + encodeURIComponent(location.pathname.slice(1) + location.search);
-    throw new Error("Sign in to open your workspace.");
+    if (!quiet) location.href = signInUrl();
+    throw Object.assign(new Error("Sign in to open your workspace."), { signin: true });
   }
   if (!response.ok) throw new Error(result.error || "Something went wrong.");
   return result;
 }
 
-const base = () => "/api/workspace/" + encodeURIComponent(state.fqdn);
+const baseFor = (fqdn) => "/api/workspace/" + encodeURIComponent(fqdn);
+const base = () => baseFor(state.fqdn);
 
 function status(id, text, bad = false) {
   const node = $(id);
@@ -37,6 +40,9 @@ function showFile(path) {
 }
 
 function runPreview() {
+  // Until the new page loads, calls from the old one are dropped.
+  state.frameFqdn = "";
+  $("preview").dataset.fqdn = state.fqdn;
   $("preview").src = "/sandbox/" + encodeURIComponent(state.fqdn) + "?t=" + Date.now();
 }
 
@@ -119,25 +125,37 @@ async function addRecord() {
 }
 
 // Bridge: the sandbox has an opaque origin, so it asks this page to make database calls for it.
+// Calls run against the project the frame was loaded for, never a project selected since.
 const BRIDGE = {
-  list: (a) => api(base() + "/records?collection=" + encodeURIComponent(a.collection) + "&limit=" + (Number(a.limit) || 100)).then((r) => r.records),
-  add: (a) => api(base() + "/records", { method: "POST", body: JSON.stringify({ collection: a.collection, data: a.data }) }).then((r) => r.record),
-  update: (a) => api(base() + "/records", { method: "PATCH", body: JSON.stringify({ id: a.id, data: a.data }) }).then((r) => r.record),
-  remove: (a) => api(base() + "/records?id=" + encodeURIComponent(a.id), { method: "DELETE" }).then(() => true),
+  list: (f, a) => api(baseFor(f) + "/records?collection=" + encodeURIComponent(a.collection) + "&limit=" + (Number(a.limit) || 100), {}, true).then((r) => r.records),
+  add: (f, a) => api(baseFor(f) + "/records", { method: "POST", body: JSON.stringify({ collection: a.collection, data: a.data }) }, true).then((r) => r.record),
+  update: (f, a) => api(baseFor(f) + "/records", { method: "PATCH", body: JSON.stringify({ id: a.id, data: a.data }) }, true).then((r) => r.record),
+  remove: (f, a) => api(baseFor(f) + "/records?id=" + encodeURIComponent(a.id), { method: "DELETE" }, true).then(() => true),
 };
+
+function signInNotice() {
+  const node = $("project-status");
+  node.replaceChildren("Your session ended. ", Object.assign(document.createElement("a"), { href: signInUrl(), textContent: "Sign in again" }), " — unsaved edits stay in this tab until you leave.");
+  node.classList.add("bad");
+}
+
+$("preview").addEventListener("load", () => { state.frameFqdn = $("preview").dataset.fqdn || ""; });
 
 let refreshTimer = 0;
 addEventListener("message", async (event) => {
   const frame = $("preview").contentWindow;
   if (event.source !== frame || !event.data || event.data.type !== "ofsdb:call") return;
-  const { id, op, args } = event.data;
+  const { id, op, args, fqdn } = event.data;
+  // Drop calls from a sandbox loaded for another project, or one still loading.
+  if (!fqdn || fqdn !== state.fqdn || fqdn !== state.frameFqdn) return;
   const reply = (body) => frame.postMessage({ type: "ofsdb:result", id, ...body }, "*");
   if (!Object.hasOwn(BRIDGE, op)) return reply({ error: "Unknown ofsdb call." });
   try {
-    reply({ result: await BRIDGE[op](args || {}) });
-    if (op !== "list") { clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshDb, 300); }
+    reply({ result: await BRIDGE[op](fqdn, args || {}) });
+    if (op !== "list" && fqdn === state.fqdn) { clearTimeout(refreshTimer); refreshTimer = setTimeout(refreshDb, 300); }
   } catch (error) {
     reply({ error: error.message });
+    if (error.signin) signInNotice();
   }
 });
 

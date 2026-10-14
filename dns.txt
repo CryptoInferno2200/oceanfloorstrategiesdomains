@@ -1,27 +1,25 @@
-; OFS Domains — zone template
-; Replace HOST with your Pages hostname (example: ofs-domains.pages.dev)
-; Cloudflare Pages custom domain uses CNAME flattening on the apex.
-; Replace APEX with the claimed name (example: kelpchart.com)
+; OFS Domains — zone template (Netlify)
+; The site is served by Netlify. Point the apex at Netlify's load balancer and www at the Netlify site.
+; If your DNS provider has no ALIAS/ANAME/flattening, use the apex A record Netlify shows in its domain panel.
+; Replace APEX with the claimed name (example: yourname.com)
 ; TTL 300 while you cut over, then 3600.
 
 $TTL 300
-@     IN  ALIAS  HOST.
-www   IN  CNAME  HOST.
+@     IN  ALIAS  apex-loadbalancer.netlify.com.
+www   IN  CNAME  oceanfloorstrategiesdomains.netlify.app.
 
 ; Dual listing. Same letters. Do not invent a new TLD.
 _ofs1 IN  TXT    "v=OFS1; listing=both; wallet=haven"
 _ens  IN  TXT    "ens-name=APEX"
 
-; Mail. Operator inbox until you change it.
+; Mail. Replace with your own provider's SPF and a role inbox you control.
 @     IN  TXT    "v=spf1 include:_spf.google.com ~all"
-_dmarc IN TXT    "v=DMARC1; p=quarantine; rua=mailto:oceanfloorstrategies2200@gmail.com"
+_dmarc IN TXT    "v=DMARC1; p=quarantine; rua=mailto:hostmaster@ofsdomains.com"
 
-; TLS. The host issues the cert (Let's Encrypt / Google Trust / Cloudflare).
-; CAA locks who may mint. ACME HTTP-01 is answered at the host. No PEM to paste.
+; TLS. Netlify issues and renews the certificate with Let's Encrypt (ACME). No PEM to paste.
+; CAA locks who may mint.
 @     IN  CAA  0 issue "letsencrypt.org"
-@     IN  CAA  0 issue "pki.goog"
-@     IN  CAA  0 issue "digicert.com"
 @     IN  CAA  0 issuewild "letsencrypt.org"
-@     IN  CAA  0 iodef "mailto:oceanfloorstrategies2200@gmail.com"
+@     IN  CAA  0 iodef "mailto:hostmaster@ofsdomains.com"
 
-; HTTPS is terminated at the host. No nameserver panel after this file is saved.
+; HTTPS is terminated at Netlify.

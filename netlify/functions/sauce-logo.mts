@@ -5,6 +5,8 @@ import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
 
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
+// logo_key holds this marker while a generation is running, so parallel requests don't generate twice.
+const PENDING = "pending";
 const escapeXml = (value: string) => value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 
 function json(body: unknown, status = 200) {
@@ -23,14 +25,17 @@ export default async (req: Request, context: Context) => {
 
   if (req.method === "GET") {
     const slug = normalize(context.params.slug);
-    const [row] = await db.sql`SELECT logo_key FROM sauce_launches WHERE slug = ${slug}`;
-    if (!row?.logo_key) return new Response("Not found", { status: 404 });
+    const [row] = await db.sql`SELECT logo_key, status, user_email FROM sauce_launches WHERE slug = ${slug}`;
+    if (!row?.logo_key || row.logo_key === PENDING) return new Response("Not found", { status: 404 });
+    // Unpublished launches are private previews, so only their owner sees the logo.
+    const published = row.status === "published";
+    if (!published && normalize((await getUser())?.email) !== row.user_email) return new Response("Not found", { status: 404 });
     const result = await store.getWithMetadata(String(row.logo_key), { type: "arrayBuffer" });
     if (!result) return new Response("Not found", { status: 404 });
     return new Response(result.data, {
       headers: {
         "Content-Type": String(result.metadata?.contentType || "image/png"),
-        "Cache-Control": "public, max-age=300",
+        "Cache-Control": published ? "public, max-age=300" : "private, no-store",
         "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'",
       },
     });
@@ -43,9 +48,19 @@ export default async (req: Request, context: Context) => {
   const email = normalize(user?.email);
   if (!email) return json({ error: "Sign in to use the Sauce Button." }, 401);
   const slug = normalize(context.params.slug);
-  const [launch] = await db.sql`SELECT slug, brief, logo_key FROM sauce_launches WHERE slug = ${slug} AND user_email = ${email}`;
-  if (!launch) return json({ error: "Launch not found." }, 404);
-  if (launch.logo_key) return json({ logo: `/api/sauce-logo/${slug}` });
+  // Claim the logo slot first. A claim left pending by a crashed run frees up after two minutes.
+  const [launch] = await db.sql`
+    UPDATE sauce_launches SET logo_key = ${PENDING}, updated_at = NOW()
+    WHERE slug = ${slug} AND user_email = ${email}
+      AND (logo_key IS NULL OR (logo_key = ${PENDING} AND updated_at < NOW() - INTERVAL '2 minutes'))
+    RETURNING slug, brief
+  `;
+  if (!launch) {
+    const [existing] = await db.sql`SELECT logo_key FROM sauce_launches WHERE slug = ${slug} AND user_email = ${email}`;
+    if (!existing) return json({ error: "Launch not found." }, 404);
+    if (existing.logo_key === PENDING) return json({ logo: `/api/sauce-logo/${slug}`, pending: true }, 202);
+    return json({ logo: `/api/sauce-logo/${slug}` });
+  }
 
   const brief = (typeof launch.brief === "string" ? JSON.parse(launch.brief) : launch.brief) as Record<string, any>;
   let data: Uint8Array<ArrayBuffer> | string = monogram(String(brief.name || "Sauce"), brief.colors?.primary || "#0f766e", brief.colors?.accent || "#f59e0b");
@@ -71,8 +86,18 @@ export default async (req: Request, context: Context) => {
   }
 
   const key = `${slug}/logo`;
-  await store.set(key, new Blob([data]), { metadata: { contentType } });
-  await db.sql`UPDATE sauce_launches SET logo_key = ${key}, updated_at = NOW() WHERE slug = ${slug} AND user_email = ${email}`;
+  try {
+    await store.set(key, new Blob([data]), { metadata: { contentType } });
+    await db.sql`UPDATE sauce_launches SET logo_key = ${key}, updated_at = NOW() WHERE slug = ${slug} AND user_email = ${email} AND logo_key = ${PENDING}`;
+  } catch (error) {
+    console.error("Sauce logo save failed", error);
+    try {
+      await db.sql`UPDATE sauce_launches SET logo_key = NULL, updated_at = NOW() WHERE slug = ${slug} AND user_email = ${email} AND logo_key = ${PENDING}`;
+    } catch {
+      // The two-minute expiry frees the slot.
+    }
+    return json({ error: "The logo could not be saved. Try again." }, 500);
+  }
   return json({ logo: `/api/sauce-logo/${slug}`, generated });
 };
 

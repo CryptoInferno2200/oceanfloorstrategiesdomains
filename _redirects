@@ -1,9 +1,14 @@
 # Cloudflare Pages. Netlify reads netlify.toml; these rules mirror it so both hosts serve the same URLs.
+# Source, archive, and internal-doc 404 blocks live in netlify.toml (forced); Cloudflare Pages redirects cannot return 404.
+# oauth.html, verify.html, and reset.html redirect from netlify.toml with force; an unforced rule here would be shadowed by the files.
 /  /home.html  200
 /index.html  /home.html  200
 /index  /home.html  200
+/reef.html  /vault.html  301
+/reef  /vault.html  301
 /vault  /vault.html  200
 /host  /host.html  200
 /name  /name.html  200
 /privacy  /privacy.html  200
 /rights  /rights.html  200
+/terms  /terms.html  200

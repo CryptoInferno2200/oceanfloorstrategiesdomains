@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#041016" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icon.svg" />
-  <title>OFS Haven — Bind a name</title>
+  <title>OFS Haven — Web3 binding preview</title>
   <style>
     :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.78); --line:rgba(238,244,242,.12); --mark:#a9c4b8; }
     * { box-sizing: border-box; }
@@ -23,7 +23,9 @@
     button.ghost { background:var(--card); color:var(--fg); box-shadow:0 0 0 1px var(--line); }
     .row { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
     .row input { flex:1; min-width: 180px; }
-    canvas { width:100%; height:320px; border-radius:16px; display:block; background:#07222c; }
+    #reef { width:100%; height:auto; aspect-ratio:720 / 320; border-radius:16px; display:block; background:#07222c; }
+    .note { margin-top:12px; padding:12px 14px; border-radius:12px; box-shadow:0 0 0 1px var(--line); color:var(--fg); font-size:14px; }
+    button[aria-pressed="true"] { outline:2px solid var(--mark); outline-offset:2px; }
     .card { margin-top:20px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
     .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
     code, .mono { font-family: ui-monospace, monospace; font-size:12px; word-break:break-all; }
@@ -36,14 +38,16 @@
 <canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
 
   <header>
-    <div class="k">OFS Haven Wallet · Name layer</div>
-    <h1>Bind the real name to this wallet.</h1>
-    <p class="lead">No .ofs TLD. <code>kelpchart.com</code> stays a .com. Haven signs. The reef grows the body. Wallets can pay the name.</p>
+    <div class="k">OFS Haven Wallet · Web3 binding preview</div>
+    <h1>Web3 binding preview.</h1>
+    <p class="lead">See how a real ICANN name could bind to a Haven wallet. No .ofs TLD — <code>yourname.com</code> stays a .com.</p>
+    <p class="note" role="note"><strong>Preview only.</strong> Nothing here is written on-chain or to DNS. The wallet and node values are illustrative hashes of the name, not real addresses, and the DNS records are examples with placeholder targets.</p>
     <nav>
       <a href="home.html">Home</a>
       <a href="auto.html">Auto</a>
       <a href="bundle.html">Products</a>
       <a href="profile.html">Profile</a>
+      <a href="workspace.html">Workspace</a>
       <a href="sauce.html">Sauce</a>
       <a href="vault.html">Vault</a>
       <a class="on" href="bind.html">Bind</a>
@@ -54,24 +58,24 @@
   <main>
     <label for="fqdn">Claimed ICANN name</label>
     <div class="row">
-      <input id="fqdn" value="kelpchart.com" autocomplete="off" />
-      <button id="preview">Preview plot</button>
-      <button class="ghost" id="bind">Bind to demo wallet</button>
+      <input id="fqdn" placeholder="yourname.com" autocomplete="off" />
+      <button type="button" id="preview">Preview plot</button>
+      <button type="button" class="ghost" id="bind">Preview bind (illustrative)</button>
     </div>
     <div class="row" style="margin-top:10px">
-      <button class="ghost" type="button" data-list="web">Web only · $0 extra</button>
-      <button type="button" data-list="both">Both · included</button>
-      <button class="ghost" type="button" data-list="web3">Web3 only · $0 extra</button>
+      <button class="ghost" type="button" data-list="web" aria-pressed="false">Web only · $0 extra</button>
+      <button type="button" data-list="both" aria-pressed="true">Both · included</button>
+      <button class="ghost" type="button" data-list="web3" aria-pressed="false">Web3 only · $0 extra</button>
     </div>
     <p class="lead" id="listline" style="margin-top:10px">Web + Web3 is on. Same year. Same letters. $0 extra.</p>
     <div class="card">
-      <canvas id="reef" width="720" height="320"></canvas>
+      <canvas id="reef" width="720" height="320" role="img" aria-label="Illustrative reef plot for the name"></canvas>
       <p id="line" class="lead" style="margin:12px 0 0"></p>
     </div>
     <div class="card" id="out" hidden>
-      <div class="k">Bind intent</div>
+      <div class="k">Bind intent · illustrative</div>
       <p class="mono" id="intent"></p>
-      <div class="k" style="margin-top:12px">DNS Haven writes</div>
+      <div class="k" style="margin-top:12px">Example DNS records · not written</div>
       <ul class="dns" id="dns"></ul>
     </div>
   </main>

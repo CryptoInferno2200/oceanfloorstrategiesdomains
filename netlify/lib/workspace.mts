@@ -12,6 +12,25 @@ export const COLLECTION = /^[a-z0-9][a-z0-9_-]{0,39}$/;
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
 const esc = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 
+type Query = (text: string, params?: unknown[]) => Promise<Record<string, any>[]>;
+type Client = { query(text: string, params?: unknown[]): Promise<{ rows: Record<string, any>[] }>; release(): void };
+
+// Runs fn inside one database transaction on a dedicated connection. Shared with Sauce.
+export async function transaction<T>(db: ReturnType<typeof getDatabase>, fn: (query: Query) => Promise<T>): Promise<T> {
+  const client = (await (db.pool as unknown as { connect(): Promise<Client> }).connect());
+  try {
+    await client.query("BEGIN");
+    const result = await fn(async (text, params = []) => (await client.query(text, params)).rows);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export type OwnedProject = { id: number; fqdn: string; name: string; description: string; stage: string };
 
 // Resolves the signed-in owner's project, or null when it is not theirs.
@@ -19,13 +38,8 @@ export async function ownedProject(fqdnParam: unknown) {
   const user = await getUser();
   const email = normalize(user?.email);
   if (!email) return { email: "", project: null };
-  let fqdn = "";
-  try {
-    fqdn = normalize(decodeURIComponent(String(fqdnParam || "")));
-  } catch {
-    // Malformed escapes can't name a project.
-    return { email, project: null };
-  }
+  // Route params arrive already decoded; decoding again would turn a literal "%" sequence into something else.
+  const fqdn = normalize(fqdnParam);
   const [project] = await getDatabase().sql`
     SELECT id, fqdn, name, description, stage FROM projects WHERE user_email = ${email} AND fqdn = ${fqdn}
   `;
@@ -90,8 +104,10 @@ export async function loadFiles(project: OwnedProject) {
 }
 
 // The sandbox page posts requests to the workspace page, which owns the signed-in session.
-function bridge(parentOrigin: string) {
+// Each call is tagged with the project the sandbox was loaded for, so the workspace drops calls from a stale frame.
+function bridge(parentOrigin: string, fqdn: string) {
   return `(() => {
+  const fqdn = ${JSON.stringify(fqdn)};
   const pending = new Map();
   let seq = 0;
   addEventListener("message", (event) => {
@@ -105,7 +121,7 @@ function bridge(parentOrigin: string) {
     if (parent === window) return reject(new Error("ofsdb works inside the OFS workspace preview."));
     const id = ++seq;
     pending.set(id, { resolve, reject });
-    parent.postMessage({ type: "ofsdb:call", id, op, args }, ${JSON.stringify(parentOrigin)});
+    parent.postMessage({ type: "ofsdb:call", fqdn, id, op, args }, ${JSON.stringify(parentOrigin)});
   });
   window.ofsdb = {
     list: (collection, options = {}) => call("list", { collection, ...options }),
@@ -125,7 +141,7 @@ export function assemble(project: OwnedProject, files: Record<FilePath, string>,
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex" />
 <style>${safeInline(files["styles.css"], "style")}</style>
-<script>${bridge(parentOrigin)}</script>`;
+<script>${safeInline(bridge(parentOrigin, project.fqdn), "script")}</script>`;
   const tail = `<script>${safeInline(files["app.js"], "script")}</script>`;
   if (full) {
     const withHead = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, `${head}</head>`) : html.replace(/<html[^>]*>/i, (m) => `${m}<head>${head}</head>`);

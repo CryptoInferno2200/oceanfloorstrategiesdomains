@@ -22,7 +22,7 @@ export default async (request: Request) => {
   if (request.method === "GET") {
     const rows = await db.sql`
       SELECT p.id, p.fqdn, p.plan, p.label, p.listing, p.amount_cents, p.complimentary, p.status,
-             p.purchased_at, p.renews_at, r.status AS registration_status, r.registered_at
+             p.purchased_at, p.renews_at, r.status AS registration_status, r.registered_at, r.dns_status
       FROM purchase_history p
       LEFT JOIN domain_registrations r ON r.purchase_id = p.id
       WHERE p.user_email = ${email}
@@ -69,7 +69,7 @@ export default async (request: Request) => {
     await attemptRegistration(id).catch((error) => console.error(`Registration for ${id} deferred`, error));
     const [row] = await db.sql`
       SELECT p.id, p.fqdn, p.plan, p.label, p.listing, p.amount_cents, p.complimentary, p.status, p.purchased_at, p.renews_at,
-             r.status AS registration_status, r.registered_at
+             r.status AS registration_status, r.registered_at, r.dns_status
       FROM purchase_history p
       LEFT JOIN domain_registrations r ON r.purchase_id = p.id
       WHERE p.id = ${id} AND p.user_email = ${email}

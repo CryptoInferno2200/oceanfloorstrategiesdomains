@@ -9,6 +9,7 @@ const wantFqdn = String(q.get("fqdn") || "").trim().toLowerCase().replace(/^http
 const LABELS = (window.OFSPurchases && OFSPurchases.LABELS) || {};
 const LISTING = { both: "Web + Web3", web: "Web only", web3: "Web3 only" };
 const STATUS = { paid: "Paid", complimentary: "Complimentary", pending: "Payment pending", refunded: "Refunded", canceled: "Canceled" };
+const DNS = { active: "Live on OFS nameservers", pending: "Connecting to OFS nameservers…", failed: "Needs attention — we’ll be in touch" };
 const REGISTRATION = { registered: "Registered · WHOIS privacy on", queued: "Registering…", retrying: "Registering… (retrying)", failed: "Needs attention — we’ll be in touch" };
 
 function when(value) {
@@ -60,6 +61,7 @@ function render(p) {
   if (p.purchased_at) rows.push("Purchased · " + when(p.purchased_at));
   if (p.renews_at) rows.push("Renews · " + when(p.renews_at));
   if (p.registration_status) rows.push("Registration · " + (REGISTRATION[p.registration_status] || p.registration_status));
+  if (p.registration_status === "registered" && p.dns_status) rows.push("DNS · " + (DNS[p.dns_status] || p.dns_status));
   list(rows);
   if (fqdn) {
     const site = $("toHost");

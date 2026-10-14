@@ -2,6 +2,7 @@
 // PORKBUN_API_KEY and PORKBUN_SECRET_API_KEY need the `purchase` scope, and the account needs prepaid credit.
 import { getDatabase } from "@netlify/database";
 import { TLD_CENTS } from "./pricing.mts";
+import { dnsConfigured, nameservers, provisionZone } from "./dns.mts";
 
 const API = "https://api.porkbun.com/api/json/v3";
 const MAX_ATTEMPTS = 6;
@@ -101,12 +102,12 @@ export async function attemptRegistration(purchaseId: string) {
     const check = await call(`domain/checkDomain/${encodeURIComponent(fqdn)}`);
     const result = check.data.response || {};
     // An earlier attempt whose reply was lost may already have registered it.
-    if (check.ok && result.inYourAccount) return finish("registered", "");
+    if (check.ok && result.inYourAccount) { await finish("registered", ""); return provisionDns(purchaseId); }
     if (check.ok && result.avail !== "yes") return fail("Name was taken before registration.");
     const cost = Math.round(Number(result.price) * 100);
     if (!check.ok || !cost) return retryOrFail(`Availability check returned ${check.status}.`);
     const created = await call(`domain/create/${encodeURIComponent(fqdn)}`, { cost, agreeToTerms: "yes", whoisPrivacy: true }, `ofs-${purchaseId}`);
-    if (created.ok) return finish("registered", "", String(created.data.orderId || ""), cost);
+    if (created.ok) { await finish("registered", "", String(created.data.orderId || ""), cost); return provisionDns(purchaseId); }
     const code = String(created.data.code || created.status);
     // Errors a retry cannot fix fail at once; funds, limits, and outages retry from the schedule.
     const permanent = ["DOMAIN_NOT_AVAILABLE", "PREMIUM_DOMAIN", "INVALID_DOMAIN", "INVALID_TLD", "ORDER_TOO_LARGE"].includes(code);
@@ -115,5 +116,47 @@ export async function attemptRegistration(purchaseId: string) {
   } catch (error) {
     console.error(`Registration of ${fqdn} failed`, error);
     return retryOrFail(String((error as Error)?.message || error).slice(0, 300));
+  }
+}
+
+// Registered names whose zone or nameservers are not set yet, for the retry schedule.
+export async function pendingDns(limit = 20) {
+  const rows = await getDatabase().sql`
+    SELECT purchase_id FROM domain_registrations
+    WHERE status = 'registered' AND dns_status = 'pending' AND dns_attempts < ${MAX_ATTEMPTS}
+      AND (dns_updated_at IS NULL OR dns_updated_at < NOW() - INTERVAL '10 minutes')
+    ORDER BY dns_updated_at NULLS FIRST
+    LIMIT ${limit}
+  `;
+  return rows.map((row) => String(row.purchase_id));
+}
+
+// Hosts the name on OFS PowerDNS, then points its nameservers there at Porkbun. Safe to repeat.
+export async function provisionDns(purchaseId: string) {
+  // Without the DNS server configured the name stays pending without spending attempts.
+  if (!dnsConfigured() || !registrarConfigured()) return;
+  const db = getDatabase();
+  const [row] = await db.sql`
+    UPDATE domain_registrations
+    SET dns_attempts = dns_attempts + 1, dns_updated_at = NOW(), updated_at = NOW()
+    WHERE purchase_id = ${purchaseId} AND status = 'registered' AND dns_status = 'pending' AND dns_attempts < ${MAX_ATTEMPTS}
+    RETURNING fqdn, dns_attempts
+  `;
+  if (!row) return;
+  const fqdn = String(row.fqdn);
+  const record = (status: string, error: string) => db.sql`
+    UPDATE domain_registrations SET dns_status = ${status}, dns_error = ${error || null}, dns_updated_at = NOW(), updated_at = NOW()
+    WHERE purchase_id = ${purchaseId}
+  `;
+  try {
+    // Zone first, so the name never points at nameservers that do not answer for it.
+    await provisionZone(fqdn);
+    const ns = await call(`domain/updateNs/${encodeURIComponent(fqdn)}`, { ns: nameservers() });
+    if (!ns.ok) throw new Error(`Nameserver update returned ${ns.status}: ${String(ns.data.message || "").slice(0, 200)}`);
+    await record("active", "");
+  } catch (error) {
+    const message = String((error as Error)?.message || error).slice(0, 300);
+    console.error(`DNS for ${fqdn} (purchase ${purchaseId}) failed: ${message}`);
+    await record(Number(row.dns_attempts) >= MAX_ATTEMPTS ? "failed" : "pending", message);
   }
 }

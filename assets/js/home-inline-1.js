@@ -10,6 +10,11 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
     function authMessage(error) {
       const detail = String(error && error.message || "").toLowerCase();
       if (error instanceof MissingIdentityError) return "Email authentication is temporarily unavailable. Please try again shortly.";
+      // In the browser, Identity errors arrive without an HTTP status, so match on the message too.
+      if (detail.includes("not confirmed")) return "Confirm this email from the message in your inbox, then sign in.";
+      if (detail.includes("already been registered")) return "An account already exists for this email. Sign in, or use Forgot password to reset it.";
+      if (detail.includes("invalid_grant") || detail.includes("no user found")) return "That email and password do not match. Create the account first if this is your first visit.";
+      if (detail === "user not found") return "That email link has expired or was already used. Sign in, or request a new link.";
       if (error instanceof AuthError && error.status === 401 && detail.includes("confirm")) return "Confirm this email from the message in your inbox, then sign in.";
       if (error instanceof AuthError && error.status === 401) return "That email and password do not match. Create the account first if this is your first visit.";
       if (error instanceof AuthError && error.status === 403) return "Sign-in is unavailable for this account. Please try again or reset the password.";

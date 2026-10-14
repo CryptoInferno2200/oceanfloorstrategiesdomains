@@ -6,7 +6,7 @@
   const REPLIES = [
     { test: /claim|\$10|ten dollar/i, reply: "Claim is $10 a year for the name. Both listings are $0. Plot and bind stay on. Checkout opens Stripe for Claim." },
     { test: /ofs one|\$99|ninety/i, reply: "OFS One is $99 a year. Tide seat, launch kit, plot, deed, and the name year are in it. Checkout opens the OFS One Stripe link." },
-    { test: /abyss/i, reply: "Abyss One is $299 a year for five names and the studio seat. Store, studio, and game stacks are in it. Checkout opens the Abyss One Stripe link." },
+    { test: /abyss/i, reply: "Abyss One is $299 a month for five names, the studio seat, and unlimited projects. Other plans cap at 3 projects. Store, studio, and game stacks are in it. Checkout opens the Abyss One Stripe link." },
     { test: /list|web3|dual|both/i, reply: "Web, Web3, or both is $0 extra. Same letters. Same year." },
     { test: /free|white ?list|complimentary|creator/i, reply: "Every plan is billed by the year. Pick Claim, OFS One, or Abyss One and check out with Stripe." },
     { test: /stripe|pay|card|checkout/i, reply: "Products → Checkout → Pay. Claim, OFS One, and Abyss One each have their own Stripe link." },
@@ -123,7 +123,7 @@
       panel.hidden = false;
       btn.setAttribute("aria-expanded", "true");
       if (!document.getElementById("ofs-cs-log").childElementCount) {
-        bubble("bot", "I can walk Claim $10, OFS One $99, Abyss One $299, listings, and checkout. If I miss, we write support.");
+        bubble("bot", "I can walk Claim $10, OFS One $99, Abyss One $299/month, listings, and checkout. If I miss, we write support.");
       }
     }
     btn.addEventListener("click", () => { if (panel.hidden) open(); else close(); });

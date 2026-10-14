@@ -58,19 +58,24 @@
     try { localStorage.setItem("ofs.domains.receipt.v1", JSON.stringify({ fqdn, bundle: plan, listing, due: quote.due, complimentary: free, paidAt: new Date().toISOString() })); } catch (_) {}
     if (typeof OFSHost !== "undefined") OFSHost.publish({ fqdn, businessName, logoUrl, description, plan, listing });
     if (typeof OFSPurchases !== "undefined") OFSPurchases.add({ fqdn, plan, listing, due: quote.due, complimentary: free });
+    // Saves the project to the signed-in account; guests keep the local copy only.
+    // Resolves with the upgrade path when the account is over its project limit.
+    let saved = Promise.resolve(null);
     try {
-      // Saves the project to the signed-in account; guests keep the local copy only.
-      fetch("/api/projects", {
+      saved = fetch("/api/projects", {
         method: "POST",
         keepalive: true,
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ fqdn, name: businessName, description, plan, listing }),
-      }).catch(() => {});
+      })
+        .then((response) => response.status === 402 ? response.json().catch(() => ({})) : null)
+        .then((result) => result ? { error: result.error || "Project limit reached.", upgrade: result.upgrade || "checkout.html?bundle=abyss-one&listing=both" } : null)
+        .catch(() => null);
     } catch (_) {}
     const next = free || quote.due === 0
       ? "live.html?fqdn=" + encodeURIComponent(fqdn) + "&listing=" + listing + "&bundle=" + plan + "&due=0&complimentary=1"
       : "checkout.html?bundle=" + plan + "&listing=" + listing + "&fqdn=" + encodeURIComponent(fqdn);
-    return { fqdn, plan, listing, quote, profile, free, steps: STEPS, next };
+    return { fqdn, plan, listing, quote, profile, free, steps: STEPS, next, saved };
   }
 
   root.OFSRun = { STEPS, stem, planOf, listingOf, complimentary, run };

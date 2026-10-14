@@ -6,6 +6,7 @@ const PLANS: Record<string, { label: string; cents: number }> = {
   one: { label: "OFS One", cents: 9900 },
   "abyss-one": { label: "OFS Abyss One", cents: 29900 },
 };
+const MONTHLY = new Set(["abyss-one"]);
 
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
 const TLD_CENTS: Record<string, number> = { com: 1099, net: 1199, org: 1099, app: 1399, ai: 7999, io: 3999, studio: 1999, store: 1399, gg: 1399 };
@@ -35,6 +36,26 @@ export default async (request: Request) => {
 
   let event: { id?: string; type?: string; data?: { object?: Record<string, any> } };
   try { event = JSON.parse(raw); } catch { return new Response("Invalid payload", { status: 400 }); }
+  if (event.type === "invoice.paid" || event.type === "customer.subscription.deleted") {
+    // Monthly renewals push renews_at forward; cancellations end the seat.
+    const object = event.data?.object || {};
+    const subscription = String((event.type === "invoice.paid" ? object.subscription || object.parent?.subscription_details?.subscription : object.id) || "");
+    if (!subscription) return new Response(null, { status: 204 });
+    const db = getDatabase();
+    if (event.type === "customer.subscription.deleted") {
+      await db.sql`UPDATE purchase_history SET status = 'canceled' WHERE stripe_subscription_id = ${subscription}`;
+    } else {
+      const periodEnd = Number(object.lines?.data?.[0]?.period?.end || 0);
+      if (periodEnd) {
+        await db.sql`
+          UPDATE purchase_history
+          SET renews_at = GREATEST(COALESCE(renews_at, NOW()), ${new Date(periodEnd * 1000).toISOString()}::timestamptz), status = 'paid'
+          WHERE stripe_subscription_id = ${subscription}
+        `;
+      }
+    }
+    return Response.json({ received: true });
+  }
   if (event.type !== "checkout.session.completed" && event.type !== "checkout.session.async_payment_succeeded") return new Response(null, { status: 204 });
   const session = event.data?.object || {};
   if (session.payment_status !== "paid") return new Response(null, { status: 204 });
@@ -51,12 +72,14 @@ export default async (request: Request) => {
   const db = getDatabase();
   const purchasedAt = new Date(Number(session.created || Math.floor(Date.now() / 1000)) * 1000);
   const renewsAt = new Date(purchasedAt);
-  renewsAt.setUTCFullYear(renewsAt.getUTCFullYear() + 1);
+  if (MONTHLY.has(plan)) renewsAt.setUTCMonth(renewsAt.getUTCMonth() + 1);
+  else renewsAt.setUTCFullYear(renewsAt.getUTCFullYear() + 1);
+  const subscription = typeof session.subscription === "string" ? session.subscription : null;
   await db.sql`
     INSERT INTO purchase_history
-      (id, user_email, fqdn, plan, label, listing, amount_cents, complimentary, status, purchased_at, renews_at)
+      (id, user_email, fqdn, plan, label, listing, amount_cents, complimentary, status, purchased_at, renews_at, stripe_subscription_id)
     VALUES
-      (${String(session.id || event.id)}, ${email}, ${fqdn}, ${plan}, ${product.label}, ${listing}, ${expectedCents}, ${false}, ${"paid"}, ${purchasedAt.toISOString()}, ${renewsAt.toISOString()})
+      (${String(session.id || event.id)}, ${email}, ${fqdn}, ${plan}, ${product.label}, ${listing}, ${expectedCents}, ${false}, ${"paid"}, ${purchasedAt.toISOString()}, ${renewsAt.toISOString()}, ${subscription})
     ON CONFLICT (id) DO NOTHING
   `;
   const sauce = normalize(session.metadata?.sauce);

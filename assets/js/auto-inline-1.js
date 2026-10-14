@@ -28,5 +28,9 @@ const assistantBrief = sessionStorage.getItem("ofs.domains.ai-brief");
           location.href = job.next;
         }
       };
-      tick();
+      job.saved.then((limit) => {
+        if (!limit) return tick();
+        document.getElementById("live").textContent = limit.error + " Opening Abyss One.";
+        setTimeout(() => { location.href = limit.upgrade; }, 1600);
+      });
     };

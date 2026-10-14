@@ -17,7 +17,7 @@ const q = new URLSearchParams(location.search);
         b.type = "button";
         b.className = "pick" + (p.id === state.plan ? " on" : "");
         b.innerHTML = "<span class='k'>" + (id === "claim" ? "Name" : "All-in-one") + "</span><strong>" + p.name + "</strong><div class='price'>" +
-          OFSPrice.money(p.year) + "<span class='k'> / year</span></div><p class='lead' style='margin:0;font-size:13px'>" + p.blurb + "</p>";
+          OFSPrice.money(OFSPrice.priceOf(p)) + "<span class='k'> / " + OFSPrice.cycleOf(p) + "</span></div><p class='lead' style='margin:0;font-size:13px'>" + p.blurb + "</p>";
         b.addEventListener("click", () => { state.plan = p.id; paint(); });
         box.appendChild(b);
       });
@@ -41,7 +41,7 @@ const q = new URLSearchParams(location.search);
         "<li><span>" + l.label + "</span><span>" + OFSPrice.money(l.amount) + "</span></li>"
       ).join("");
       document.getElementById("due").textContent = "Due " + OFSPrice.money(quote.due);
-      document.getElementById("renew").textContent = "Renews " + OFSPrice.money(quote.renewsAt) + " · " + quote.names + " name" + (quote.names === 1 ? "" : "s");
+      document.getElementById("renew").textContent = "Renews " + OFSPrice.money(quote.renewsAt) + " / " + quote.term + " · " + quote.names + " name" + (quote.names === 1 ? "" : "s");
       document.getElementById("pay").textContent = quote.due === 0 ? "Claim and go live" : "Pay " + OFSPrice.money(quote.due) + " and go live";
       window._quote = quote;
     }

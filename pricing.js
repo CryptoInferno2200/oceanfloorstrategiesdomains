@@ -51,13 +51,16 @@
         "Launch kit + plot + Haven deed",
         "Brand token in Haven",
         "Privacy, SSL, 5 mail forwards",
+        "Up to 3 projects",
       ],
     },
     "abyss-one": {
       id: "abyss-one", name: "OFS Abyss One", kind: "bundle",
-      month: null, year: 299, names: 5, seat: "abyss",
-      blurb: "5 names, Abyss seat, Both on every name",
+      month: 299, year: null, names: 5, seat: "abyss",
+      blurb: "5 names, Abyss seat, unlimited projects, billed monthly",
       includes: [
+        "$299 / month · cancel anytime",
+        "Unlimited projects (others cap at 3)",
         "5 name years (each with a .com credit)",
         "Web + Web3 on every name",
         "Abyss — store / studio / game",
@@ -70,6 +73,15 @@
 
   function money(n) {
     return "$" + Number(n).toFixed(2).replace(/\.00$/, "");
+  }
+
+  /** Bundle price and billing cycle: Abyss One bills monthly, the rest yearly. */
+  function cycleOf(plan) {
+    return plan.year == null && plan.month != null ? "month" : "year";
+  }
+
+  function priceOf(plan) {
+    return cycleOf(plan) === "month" ? plan.month : plan.year;
   }
 
   function parseName(fqdn) {
@@ -92,7 +104,7 @@
     const plan = PLANS[opts.plan || opts.bundle] || PLANS.one;
     const tld = opts.tld || parsed.tld;
     const listing = opts.listing || "both";
-    const term = opts.term === "month" && plan.month != null ? "month" : "year";
+    const term = plan.kind === "seat" ? (opts.term === "month" && plan.month != null ? "month" : "year") : cycleOf(plan);
     const complimentary = Boolean(opts.complimentary);
     const tldCost = plan.kind === "claim" && (tld === "com" || tld === "org") ? CLAIM : tldYear(tld);
     const credit = plan.kind === "claim" ? CLAIM : COM_CREDIT;
@@ -102,12 +114,12 @@
     const nameLine = billedName ? 0 : (term === "year" ? tldCost : 0);
     let due = Math.round((base + surcharge + nameLine) * 100) / 100;
     if (complimentary) due = 0;
-    const renewsAt = complimentary ? 0 : (billedName ? plan.year + surcharge : (term === "month" ? plan.month : plan.year + tldCost));
+    const renewsAt = complimentary ? 0 : (billedName ? base + (term === "month" ? 0 : surcharge) : (term === "month" ? plan.month : plan.year + tldCost));
     const lines = [];
     if (billedName) {
-      lines.push({ label: plan.name + " · year", amount: complimentary ? 0 : plan.year });
+      lines.push({ label: plan.name + " · " + term, amount: complimentary ? 0 : base });
       lines.push({ label: "." + tld + " credit inside", amount: 0 });
-      if (surcharge) lines.push({ label: "." + tld + " above credit", amount: complimentary ? 0 : surcharge });
+      if (surcharge) lines.push({ label: "." + tld + " above credit" + (term === "month" ? " · first month" : ""), amount: complimentary ? 0 : surcharge });
     } else {
       lines.push({ label: plan.name + " · " + term, amount: complimentary ? 0 : base });
       if (term === "year") lines.push({ label: "." + tld + " year", amount: complimentary ? 0 : tldCost });
@@ -137,5 +149,5 @@
   }
 
   const BUNDLES = { claim: PLANS.claim, one: PLANS.one, "abyss-one": PLANS["abyss-one"] };
-  root.OFSPrice = { TLD_YEAR, COM_CREDIT, CLAIM, STRIPE, PLANS, BUNDLES, money, tldOf, tldYear, quote, parseName };
+  root.OFSPrice = { TLD_YEAR, COM_CREDIT, CLAIM, STRIPE, PLANS, BUNDLES, money, cycleOf, priceOf, tldOf, tldYear, quote, parseName };
 })(window);

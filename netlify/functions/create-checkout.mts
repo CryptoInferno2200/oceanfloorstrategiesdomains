@@ -2,10 +2,10 @@ import type { Config } from "@netlify/functions";
 import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
 
-const PLANS: Record<string, { label: string; cents: number }> = {
+const PLANS: Record<string, { label: string; cents: number; monthly?: boolean }> = {
   claim: { label: "Claim · name only", cents: 1000 },
   one: { label: "OFS One", cents: 9900 },
-  "abyss-one": { label: "OFS Abyss One", cents: 29900 },
+  "abyss-one": { label: "OFS Abyss One", cents: 29900, monthly: true },
 };
 const TLD_CENTS: Record<string, number> = { com: 1099, net: 1199, org: 1099, app: 1399, ai: 7999, io: 3999, studio: 1999, store: 1399, gg: 1399 };
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
@@ -25,7 +25,8 @@ export default async (request: Request) => {
   }
   const tld = fqdn.split(".").pop() || "com";
   const credit = plan === "claim" ? 1000 : 1099;
-  const amount = product.cents + Math.max(0, (TLD_CENTS[tld] || 1099) - credit);
+  const surcharge = Math.max(0, (TLD_CENTS[tld] || 1099) - credit);
+  const amount = product.cents + surcharge;
   const user = await getUser();
   const sauce = normalize(body.sauce);
   if (sauce) {
@@ -71,6 +72,20 @@ export default async (request: Request) => {
     "metadata[listing]": listing,
     "metadata[fqdn]": fqdn,
   });
+  if (product.monthly) {
+    // Monthly plans run as a subscription; any name cost above the .com credit is a one-time line on the first invoice.
+    params.set("mode", "subscription");
+    params.set("line_items[0][price_data][unit_amount]", String(product.cents));
+    params.set("line_items[0][price_data][recurring][interval]", "month");
+    params.set("subscription_data[metadata][plan]", plan);
+    params.set("subscription_data[metadata][fqdn]", fqdn);
+    if (surcharge) {
+      params.set("line_items[1][quantity]", "1");
+      params.set("line_items[1][price_data][currency]", "usd");
+      params.set("line_items[1][price_data][unit_amount]", String(surcharge));
+      params.set("line_items[1][price_data][product_data][name]", `.${tld} above credit · ${fqdn}`);
+    }
+  }
   if (sauce) {
     params.set("metadata[sauce]", sauce);
     params.set("success_url", `${origin}/sauce.html?launched=${encodeURIComponent(sauce)}`);

@@ -87,8 +87,8 @@
     .ai-head h2 { margin:4px 0 0; font:400 1.35rem/1.15 Georgia,serif; letter-spacing:-.025em; }
     .ai-status { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:11px; white-space:nowrap; }
     .ai-status::before { content:""; width:7px; height:7px; border-radius:50%; background:#9ebfb5; box-shadow:0 0 0 4px rgba(158,191,181,.1); }
-    .ai-thread { position:relative; display:grid; gap:9px; max-height:18rem; overflow:auto; padding:6px 18px 14px; scrollbar-width:thin; }
-    .ai-message { width:fit-content; max-width:88%; margin:0; padding:10px 12px; border-radius:13px; font-size:14px; white-space:pre-wrap; }
+    .ai-thread { position:relative; display:grid; align-content:start; gap:9px; max-height:min(24rem, 60vh); scroll-padding-bottom:14px; overflow:auto; padding:6px 18px 14px; scrollbar-width:thin; }
+    .ai-message { width:fit-content; max-width:88%; margin:0; padding:10px 12px; border-radius:13px; font-size:14px; line-height:1.5; white-space:pre-wrap; overflow-wrap:anywhere; }
     .ai-message.bot { color:#dce8e4; background:rgba(238,244,242,.07); border-bottom-left-radius:4px; }
     .ai-message.user { margin-left:auto; color:var(--bg); background:var(--fg); border-bottom-right-radius:4px; }
     .ai-message.error { color:#e0b7b0; box-shadow:inset 0 0 0 1px rgba(224,183,176,.25); }
@@ -102,8 +102,16 @@
     @media (prefers-reduced-motion: reduce) { .ai-bulb { animation:none; } }
     .ai-suggestions { position:relative; display:flex; gap:7px; padding:0 18px 12px; overflow:auto; }
     .ai-suggestions button { flex:0 0 auto; border:0; border-radius:999px; padding:7px 10px; background:transparent; color:var(--muted); box-shadow:0 0 0 1px var(--line); font:inherit; font-size:11px; cursor:pointer; }
-    .ai-compose { position:relative; display:grid; grid-template-columns:auto 1fr auto; gap:8px; padding:10px; margin:0 10px 10px; border-radius:15px; background:#07161c; box-shadow:0 0 0 1px var(--line); }
-    .ai-compose textarea { min-height:44px; max-height:8rem; resize:vertical; padding:10px 9px; border:0; outline:0; background:transparent; color:var(--fg); font:inherit; }
+    .ai-compose { position:relative; display:grid; grid-template-columns:auto minmax(0,1fr) auto auto; gap:8px; padding:10px; margin:0 10px 10px; border-radius:15px; background:#07161c; box-shadow:0 0 0 1px var(--line); }
+    .ai-compose textarea { display:block; width:100%; min-height:44px; max-height:10rem; resize:none; overflow-y:auto; padding:10px 9px; border:0; outline:0; background:transparent; color:var(--fg); font:inherit; line-height:1.5; }
+    .ai-compose:has(.ai-mic[hidden]) { grid-template-columns:auto minmax(0,1fr) auto; }
+    .ai-compose button.ai-mic { background:transparent; color:var(--fg); box-shadow:0 0 0 1px var(--line); }
+    .ai-compose button.ai-mic:hover { background:rgba(238,244,242,.06); }
+    .ai-compose button.ai-mic[aria-pressed="true"] { background:#e0b7b0; color:var(--bg); box-shadow:none; animation:listen 1.2s ease-in-out infinite; }
+    @keyframes listen { 0%,100% { box-shadow:0 0 0 0 rgba(224,183,176,.45); } 50% { box-shadow:0 0 0 6px rgba(224,183,176,0); } }
+    @media (prefers-reduced-motion: reduce) { .ai-compose button.ai-mic[aria-pressed="true"] { animation:none; } }
+    .ai-voice { grid-column:1 / -1; margin:0; padding:0 4px; color:var(--muted); font-size:12px; }
+    .ai-voice:empty { display:none; }
     .ai-compose button { align-self:end; width:44px; height:44px; border:0; border-radius:12px; background:var(--fg); color:var(--bg); cursor:pointer; }
     .ai-compose button:disabled { opacity:.45; cursor:wait; }
     .ai-compose button.ai-attach { background:transparent; color:var(--fg); box-shadow:0 0 0 1px var(--line); font-size:22px; line-height:1; }
@@ -250,9 +258,13 @@
         <input type="file" id="ai-file-input" multiple hidden>
         <label class="sr-only" for="ai-prompt">Ask a question or describe what you want to build</label>
         <textarea id="ai-prompt" rows="1" maxlength="6000" placeholder="A field guide for coastal trails…"></textarea>
+        <button type="button" class="ai-mic" id="ai-mic" aria-label="Speak your request" aria-pressed="false" title="Speak instead of typing" hidden>
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><rect x="6.25" y="2" width="5.5" height="9" rx="2.75" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3.75 8.5a5.25 5.25 0 0 0 10.5 0M9 13.75V16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
         <button type="submit" id="ai-send" aria-label="Send request">
           <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="m3 9 11-5-3.4 10-2.1-4.5L3 9Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
         </button>
+        <p class="ai-voice" id="ai-voice" role="status" aria-live="polite"></p>
       </form>
       <a class="ai-action" id="ai-action" href="auto.html" hidden>Open build workflow</a>
     </section>

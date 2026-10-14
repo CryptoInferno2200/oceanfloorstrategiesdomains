@@ -193,6 +193,120 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       }
     });
 
+    // Grow the box with its text so long requests never hide below the fold.
+    function fitPrompt() {
+      aiPrompt.style.height = "auto";
+      aiPrompt.style.height = aiPrompt.scrollHeight + "px";
+    }
+    aiPrompt.addEventListener("input", fitPrompt);
+
+    // Voice input: live dictation where the browser supports it, otherwise a recorded voice note
+    // attached like any other audio file so the assistant can listen to it.
+    const aiMic = $("ai-mic");
+    const aiVoice = $("ai-voice");
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+    let recognition = null;
+    let recorder = null;
+    let voiceTimer = 0;
+
+    function setListening(on, note) {
+      aiMic.setAttribute("aria-pressed", on ? "true" : "false");
+      aiMic.setAttribute("aria-label", on ? "Stop listening" : "Speak your request");
+      aiVoice.textContent = note || "";
+    }
+
+    function voiceError(code) {
+      if (code === "not-allowed" || code === "service-not-allowed" || code === "NotAllowedError") return "Microphone access is blocked. Allow it in your browser settings to speak.";
+      if (code === "no-speech") return "I didn't catch anything. Tap the mic and try again.";
+      if (code === "audio-capture" || code === "NotFoundError") return "No microphone was found.";
+      return "Voice input stopped. Try again or type your request.";
+    }
+
+    function startDictation() {
+      const base = aiPrompt.value.trim();
+      let finalText = "";
+      let failed = "";
+      recognition = new Recognition();
+      recognition.lang = document.documentElement.lang || navigator.language || "en-US";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.onresult = (event) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const text = event.results[i][0].transcript;
+          if (event.results[i].isFinal) finalText += text;
+          else interim += text;
+        }
+        aiPrompt.value = [base, (finalText + interim).trim()].filter(Boolean).join(" ").slice(0, 6000);
+        fitPrompt();
+        aiPrompt.scrollTop = aiPrompt.scrollHeight;
+      };
+      recognition.onerror = (event) => { if (event.error !== "aborted") failed = voiceError(event.error); };
+      recognition.onend = () => {
+        recognition = null;
+        setListening(false, failed);
+        if (!failed) aiPrompt.focus();
+      };
+      recognition.start();
+      setListening(true, "Listening… tap the mic again when you're done.");
+    }
+
+    async function startRecording() {
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+      } catch (error) {
+        setListening(false, voiceError(error && error.name));
+        return;
+      }
+      const type = ["audio/ogg;codecs=opus", "audio/mp4", "audio/webm;codecs=opus", "audio/webm"].find((t) => MediaRecorder.isTypeSupported(t)) || "";
+      const chunks = [];
+      recorder = new MediaRecorder(stream, type ? { mimeType:type } : undefined);
+      recorder.ondataavailable = (event) => { if (event.data.size) chunks.push(event.data); };
+      recorder.onstop = () => {
+        clearInterval(voiceTimer);
+        stream.getTracks().forEach((track) => track.stop());
+        const mime = (recorder.mimeType || type || "audio/webm").split(";")[0];
+        const ext = mime === "audio/mp4" ? "m4a" : mime === "audio/ogg" ? "ogg" : "webm";
+        recorder = null;
+        setListening(false, chunks.length ? "Voice note attached. Add a note or press send." : voiceError("no-speech"));
+        if (!chunks.length) return;
+        const stamp = new Date().toTimeString().slice(0, 8).replace(/:/g, "-");
+        addAiFiles([new File(chunks, "voice-note-" + stamp + "." + ext, { type:mime })]);
+        aiPrompt.focus();
+      };
+      recorder.start();
+      const startedAt = Date.now();
+      const show = () => {
+        const s = Math.floor((Date.now() - startedAt) / 1000);
+        setListening(true, "Recording " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0") + " — tap the mic again to attach it.");
+        if (s >= 120 && recorder) recorder.stop();
+      };
+      show();
+      voiceTimer = setInterval(show, 500);
+    }
+
+    function stopVoice() {
+      if (recognition) recognition.stop();
+      if (recorder && recorder.state !== "inactive") recorder.stop();
+    }
+
+    if (Recognition || canRecord) {
+      aiMic.hidden = false;
+      if (!Recognition) aiMic.title = "Record a voice note";
+      aiMic.addEventListener("click", () => {
+        if (recognition || recorder) return stopVoice();
+        try {
+          if (Recognition) startDictation();
+          else startRecording();
+        } catch (error) {
+          recognition = null;
+          setListening(false, voiceError(error && error.name));
+        }
+      });
+    }
+
     // Server rejects bodies over 60,000 bytes; drop the oldest turns until well under that.
     const AI_BODY_BYTES = 50000;
     const byteLength = (text) => new TextEncoder().encode(text).length;
@@ -224,6 +338,7 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
       aiPending = aiPending.filter((item) => item.state !== "ready");
       renderAiFiles();
       aiPrompt.value = "";
+      fitPrompt();
       aiAction.hidden = true;
       aiSend.dataset.busy = "1";
       syncSend();
@@ -281,6 +396,7 @@ import { login, signup, logout, getUser, getSettings, handleAuthCallback, reques
 
     aiForm.addEventListener("submit", (event) => {
       event.preventDefault();
+      if (recognition) recognition.abort();
       askOFS(aiPrompt.value);
     });
     aiPrompt.addEventListener("keydown", (event) => {

@@ -1,3 +1,5 @@
+import { githubButton } from "./github-push.js";
+
 const $ = (id) => document.getElementById(id);
 const FILES = ["index.html", "styles.css", "app.js"];
 const COLLECTION = /^[a-z0-9][a-z0-9_-]{0,39}$/;
@@ -179,11 +181,16 @@ async function openProject(fqdn) {
     $("workspace").hidden = false;
     $("golive").hidden = false;
     $("golive").href = "live.html?fqdn=" + encodeURIComponent(fqdn);
+    const github = githubButton({ kind: "workspace", id: fqdn, repo: fqdn, note: "Pushes your saved files. Press Save + run first to include unsaved edits." });
+    $("github-toggle").replaceChildren(github.toggle);
+    $("github-panel").replaceChildren(github.panel);
     status("project-status", (result.project.name || fqdn) + " · " + (result.saved ? "sandbox saved" : "starter files, not saved yet"));
     runPreview();
     refreshDb();
   } catch (error) {
     $("workspace").hidden = true;
+    $("github-toggle").replaceChildren();
+    $("github-panel").replaceChildren();
     status("project-status", error.message, true);
   }
 }

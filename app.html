@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Install OFS Domains on iPhone, iPad, Android, and desktop. Free, no app store needed, updates automatically." />
+  <link rel="canonical" href="https://www.ofsdomains.com/app.html" />
+  <meta name="theme-color" content="#041016" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="OFS Domains" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <title>OFS Domains — Get the app</title>
+  <style>
+    :root { --bg:#041016; --fg:#eef4f2; --muted:#9bb0aa; --card:rgba(8,22,28,.82); --line:rgba(238,244,242,.12); }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 16px/1.5 ui-sans-serif, system-ui; background:var(--bg); color:var(--fg); }
+    header, main { max-width: 720px; margin: 0 auto; padding: 24px 20px; }
+    nav { display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 0; }
+    nav a { color:var(--muted); text-decoration:none; font-size:13px; padding:8px 12px; border-radius:999px; box-shadow:0 0 0 1px var(--line); }
+    nav a.on { color:var(--fg); background:var(--card); }
+    h1 { font-family: Georgia, serif; font-size: 2rem; letter-spacing:-.03em; font-weight:400; margin: 8px 0 10px; }
+    h2 { font-family: Georgia, serif; font-weight:400; font-size:1.3rem; margin:6px 0 4px; }
+    p.lead, .card p, li { color: var(--muted); }
+    .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+    .card { margin-top:16px; padding:18px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); overflow-wrap:anywhere; }
+    .card[hidden] { display:none; }
+    .card.mine { box-shadow:0 0 0 2px #cfe4dc; }
+    .hero { display:flex; align-items:center; gap:16px; }
+    .hero img { flex:0 0 auto; width:72px; height:72px; border-radius:18px; box-shadow:0 0 0 1px var(--line); }
+    .grid { display:grid; gap:0 16px; grid-template-columns:1fr; }
+    @media (min-width: 620px) { .grid { grid-template-columns:1fr 1fr; } }
+    ol { margin:10px 0 0; padding-left:20px; }
+    li { margin:6px 0; }
+    strong { color:var(--fg); font-weight:600; }
+    button.install { height:48px; width:100%; margin-top:14px; border:0; border-radius:12px; padding:0 18px; background:var(--fg); color:var(--bg); font:inherit; font-weight:600; cursor:pointer; }
+    button.install[hidden] { display:none; }
+    .tag { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; color:#cfe4dc; box-shadow:0 0 0 1px var(--line); }
+    .ok { color:#cfe4dc; font-size:14px; }
+    .glyph { display:inline-block; padding:0 6px; border-radius:6px; box-shadow:0 0 0 1px var(--line); color:var(--fg); }
+    ul.facts { margin:8px 0 0; padding-left:18px; }
+    a { color:#cfe4dc; }
+  </style>
+  <link rel="stylesheet" href="./reef-bg.css" />
+</head>
+<body>
+<canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
+
+  <header>
+    <div class="k">OFS Domains · Download</div>
+    <h1>Get the app.</h1>
+    <p class="lead">Put OFS Domains on your home screen. It opens full screen like any other app, keeps working on a weak connection, and updates itself. Free, and no app store account needed.</p>
+    <nav>
+      <a href="home.html">Home</a>
+      <a href="auto.html">Auto</a>
+      <a href="bundle.html">Products</a>
+      <a href="profile.html">Profile</a>
+      <a href="workspace.html">Workspace</a>
+      <a href="sauce.html">Sauce</a>
+      <a href="vault.html">Vault</a>
+      <a class="on" href="app.html">Get the app</a>
+    </nav>
+  </header>
+  <main>
+    <div class="card" id="installed" hidden>
+      <div class="hero">
+        <img src="./assets/icons/icon-192.png" alt="" width="72" height="72" />
+        <div>
+          <span class="tag">Installed</span>
+          <h2>You’re in the app.</h2>
+          <p style="margin:0">OFS Domains is installed on this device. Open it from your home screen or app list any time.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="quick">
+      <div class="hero">
+        <img src="./assets/icons/icon-192.png" alt="" width="72" height="72" />
+        <div>
+          <div class="k" id="quick-k">This device</div>
+          <h2 id="quick-title">Install OFS Domains</h2>
+          <p style="margin:0" id="quick-note">Pick your device below for the steps.</p>
+        </div>
+      </div>
+      <button type="button" class="install" id="install-btn" hidden>Install app</button>
+      <p class="ok" id="install-status" role="status"></p>
+    </div>
+
+    <div class="grid">
+      <div class="card" id="card-ios">
+        <div class="k">iPhone + iPad</div>
+        <h2>Add to Home Screen</h2>
+        <ol>
+          <li>Open <strong>www.ofsdomains.com</strong> in <strong>Safari</strong>. On iOS 16.4 or later, Chrome and Edge work too.</li>
+          <li>Tap the <strong>Share</strong> button <span class="glyph" aria-hidden="true">⬆︎</span> at the bottom of the screen (top right on iPad).</li>
+          <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
+          <li>Keep the name <strong>OFS Domains</strong> and tap <strong>Add</strong>.</li>
+        </ol>
+        <p id="ios-inapp" hidden><strong>Opened from inside another app?</strong> Tap the menu and choose “Open in Safari” first. In-app browsers (Instagram, Facebook, Gmail) can’t install apps.</p>
+      </div>
+
+      <div class="card" id="card-android">
+        <div class="k">Android</div>
+        <h2>Install app</h2>
+        <ol>
+          <li>Open <strong>www.ofsdomains.com</strong> in <strong>Chrome</strong>, Edge, or Samsung Internet.</li>
+          <li>Tap <strong>Install app</strong> on this page, or open the browser menu <span class="glyph" aria-hidden="true">⋮</span> and tap <strong>Install app</strong> (or <strong>Add to Home screen</strong>).</li>
+          <li>Confirm with <strong>Install</strong>. OFS Domains appears in your app drawer.</li>
+        </ol>
+      </div>
+
+      <div class="card" id="card-desktop">
+        <div class="k">Mac, Windows, Chromebook</div>
+        <h2>Desktop app</h2>
+        <ol>
+          <li><strong>Chrome or Edge:</strong> click the install icon at the right end of the address bar, or use <strong>Install app</strong> on this page.</li>
+          <li><strong>Safari on Mac (Sonoma or later):</strong> choose <strong>File → Add to Dock</strong>.</li>
+        </ol>
+      </div>
+
+      <div class="card" id="card-stores">
+        <div class="k">App Store + Google Play</div>
+        <h2>Store listings</h2>
+        <p>No store download needed. The home-screen app above is the full OFS Domains, with the same account, purchases, and projects. When App Store and Google Play listings go live, links appear here.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="k">Good to know</div>
+      <ul class="facts">
+        <li>Sign in once inside the app. Your seat, vault, and projects sync from your account.</li>
+        <li>Updates arrive automatically the next time you open the app. Nothing to download again.</li>
+        <li>To remove it, long-press the icon and choose Remove (iPhone) or Uninstall (Android).</li>
+      </ul>
+    </div>
+  </main>
+  <script src="./assets/js/app-install.js"></script>
+  <script src="./support.js"></script>
+  <script src="./reef-bg.js"></script>
+  <script type="module" src="./avatar.js"></script>
+</body>
+</html>

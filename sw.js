@@ -1,4 +1,4 @@
-const CACHE = "ofs-domains-v43";
+const CACHE = "ofs-domains-v44";
 const PRECACHE = [
   "./home.html",
   "./auto.html",
@@ -19,6 +19,7 @@ const PRECACHE = [
   "./terms.html",
   "./vault.html",
   "./workspace.html",
+  "./app.html",
   "./auth.js",
   "./avatar.js",
   "./host.js",
@@ -47,11 +48,17 @@ const PRECACHE = [
   "./assets/js/sauce.js",
   "./assets/js/vault-inline-1.js",
   "./assets/js/workspace.js",
+  "./assets/js/app-install.js",
   "./assets/js/intro.js",
   "./assets/css/intro.css",
   "./reef-bg.css",
   "./manifest.webmanifest",
   "./icon.svg",
+  "./apple-touch-icon.png",
+  "./assets/icons/icon-192.png",
+  "./assets/icons/icon-512.png",
+  "./assets/icons/maskable-192.png",
+  "./assets/icons/maskable-512.png",
   "./dns.txt",
   "./ssl.txt",
 ];

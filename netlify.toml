@@ -9,6 +9,61 @@
 [functions]
   directory = "netlify/functions"
 
+# The repo root is the publish folder, so keep source, schema, and archives off the public site.
+[[redirects]]
+  from = "/netlify/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/node_modules/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/downloads/*"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/package.json"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/package-lock.json"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/README.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/REPUBLISH.md"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/cloudflare-pages.txt"
+  to = "/404.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/netlify.toml"
+  to = "/404.html"
+  status = 404
+  force = true
+
 [[redirects]]
   from = "/"
   to = "/home.html"
@@ -23,16 +78,19 @@
   from = "/oauth.html"
   to = "/home.html"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/verify.html"
   to = "/home.html"
   status = 301
+  force = true
 
 [[redirects]]
   from = "/reset.html"
   to = "/home.html"
   status = 301
+  force = true
 
 [[headers]]
   for = "/*"
@@ -42,7 +100,7 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' https://esm.sh https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://esm.sh https://formsubmit.co https://oauth2.googleapis.com; frame-src 'self' blob:; form-action 'self' https://buy.stripe.com; worker-src 'self' blob:; upgrade-insecure-requests"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; script-src 'self' https://esm.sh https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://esm.sh https://oauth2.googleapis.com; frame-src 'self' blob:; form-action 'self' https://buy.stripe.com; worker-src 'self' blob:; upgrade-insecure-requests"
 
 [[headers]]
   for = "/home.html"

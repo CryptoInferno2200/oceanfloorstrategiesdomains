@@ -16,6 +16,14 @@ const MAX_PDF_BYTES = 10 * 1024 * 1024;
 const MAX_MEDIA_BYTES = 14 * 1024 * 1024;
 const MAX_ARCHIVE_BYTES = 40 * 1024 * 1024;
 const MAX_TEXT_FILE_BYTES = 5 * 1024 * 1024;
+// Decompression ceilings, so a tiny crafted archive can't expand into gigabytes of memory.
+const MAX_INFLATED_ENTRY_BYTES = 8 * 1024 * 1024;
+const MAX_INFLATED_OFFICE_BYTES = 24 * 1024 * 1024;
+// Guests get a smaller per-request content budget.
+const BUDGETS = {
+  member: { text: MAX_TEXT_CHARS_TOTAL, binary: MAX_BINARY_BYTES_TOTAL },
+  guest: { text: 60000, binary: 6 * 1024 * 1024 },
+};
 
 const VISION_IMAGES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp"]);
 const MEDIA_ALIASES: Record<string, string> = {
@@ -137,7 +145,8 @@ async function readZipEntry(bytes: Uint8Array, entry: ZipEntry) {
   const start = entry.offset + 30 + view.getUint16(entry.offset + 26, true) + view.getUint16(entry.offset + 28, true);
   const data = bytes.subarray(start, start + entry.compressedSize);
   if (entry.method === 0) return data;
-  if (entry.method !== 8) return null;
+  if (entry.method !== 8 || entry.size > MAX_INFLATED_ENTRY_BYTES) return null;
+  // Throws if the stream inflates past what the entry declared.
   return new Uint8Array(inflateRawSync(data, { maxOutputLength: Math.max(entry.size, 1) }));
 }
 
@@ -151,8 +160,11 @@ async function officeText(bytes: Uint8Array, ext: string) {
     return entry.name === "content.xml";
   }).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
   const chunks: string[] = [];
+  let inflated = 0;
   for (const entry of wanted) {
-    const data = await readZipEntry(bytes, entry);
+    inflated += entry.size;
+    if (inflated > MAX_INFLATED_OFFICE_BYTES) break;
+    const data = await readZipEntry(bytes, entry).catch(() => null);
     if (!data) continue;
     const text = xmlToText(new TextDecoder().decode(data));
     if (text) chunks.push(ext === "pptx" ? `[${entry.name.replace(/^.*\//, "")}]\n${text}` : text);
@@ -242,12 +254,12 @@ async function toParts(manifest: UploadManifest, budget: Budget): Promise<Attach
 }
 
 // Resolves attachment ids for each message, newest first so the latest files get the content budget.
-export async function resolveAttachments(idsByMessage: string[][], owner: string) {
-  const budget: Budget = { text: MAX_TEXT_CHARS_TOTAL, binary: MAX_BINARY_BYTES_TOTAL };
+export async function resolveAttachments(idsByMessage: string[][], owners: string[], member: boolean) {
+  const budget: Budget = { ...BUDGETS[member ? "member" : "guest"] };
   const results: AttachmentPart[][] = idsByMessage.map(() => []);
   for (let index = idsByMessage.length - 1; index >= 0; index--) {
     for (const id of idsByMessage[index]) {
-      const manifest = await loadManifest(id, owner);
+      const manifest = await loadManifest(id, owners);
       if (!manifest || !manifest.complete) {
         results[index].push({ kind: "text", text: "An attached file could not be found or did not finish uploading." });
         continue;

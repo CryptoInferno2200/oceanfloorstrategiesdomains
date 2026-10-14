@@ -19,7 +19,13 @@ export async function ownedProject(fqdnParam: unknown) {
   const user = await getUser();
   const email = normalize(user?.email);
   if (!email) return { email: "", project: null };
-  const fqdn = normalize(decodeURIComponent(String(fqdnParam || "")));
+  let fqdn = "";
+  try {
+    fqdn = normalize(decodeURIComponent(String(fqdnParam || "")));
+  } catch {
+    // Malformed escapes can't name a project.
+    return { email, project: null };
+  }
   const [project] = await getDatabase().sql`
     SELECT id, fqdn, name, description, stage FROM projects WHERE user_email = ${email} AND fqdn = ${fqdn}
   `;

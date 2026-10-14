@@ -137,22 +137,9 @@
   async function deliverVerify(email, link) {
     const to = String(email || "").trim().toLowerCase();
     const body = "OFS Domains\n\nConfirm this seat. The link works for 20 minutes and one use.\n\n" + link + "\n\nIf you did not ask for this, ignore it.";
+    // Verification runs through Netlify Identity; this only files the local envelope.
     send({ route: "verify", to, user: to, subject: "Verify your OFS Domains seat", body, open: false });
-    try {
-      const res = await fetch("https://formsubmit.co/ajax/" + encodeURIComponent(to), {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({
-          _subject: "[OFS Verify] Confirm your seat",
-          _template: "box",
-          message: body,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      return { ok: res.ok, via: "formsubmit", data };
-    } catch (err) {
-      return { ok: false, via: "none", error: String(err && err.message || err) };
-    }
+    return { ok: true, via: "local" };
   }
 
   root.OFSMail = { OPERATOR, ROUTES, PROTO, ALG, classify, load, send, hrefFor, seal, open, digest, deliverVerify };

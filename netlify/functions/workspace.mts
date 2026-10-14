@@ -1,5 +1,6 @@
 import type { Config, Context } from "@netlify/functions";
 import { getDatabase } from "@netlify/database";
+import { rejectCrossOrigin } from "../lib/http.mts";
 import { COLLECTION, FILES, MAX_FILE_BYTES, MAX_RECORDS, MAX_RECORD_BYTES, loadFiles, ownedProject, starterFiles } from "../lib/workspace.mts";
 
 // Per-project workspace: sandbox files plus a private record store, owner only.
@@ -17,6 +18,8 @@ function recordData(value: unknown) {
 }
 
 export default async (request: Request, context: Context) => {
+  const rejected = rejectCrossOrigin(request);
+  if (rejected) return rejected;
   const { email, project } = await ownedProject(context.params.fqdn);
   if (!email) return json({ error: "Sign in to open your workspace." }, 401);
   if (!project) return json({ error: "Project not found on this account." }, 404);

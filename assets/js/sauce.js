@@ -14,7 +14,7 @@ async function api(url, opts = {}) {
     location.href = "home.html?signin=1&next=sauce.html";
     throw new Error("Sign in to use the Sauce Button.");
   }
-  if (!response.ok) throw new Error(result.error || "Something went wrong.");
+  if (!response.ok) throw Object.assign(new Error(result.error || "Something went wrong."), { upgrade: result.upgrade });
   return result;
 }
 
@@ -104,6 +104,7 @@ async function run(e) {
     step(current, "fail");
     if (current === "idea") { step("name", ""); step("kit", ""); }
     $("run-error").textContent = error.message;
+    if (error.upgrade) $("run-error").append(" ", el("a", { href: error.upgrade, textContent: "Upgrade" }));
     $("run-error").hidden = false;
     loadLaunches().catch(() => {});
   } finally {

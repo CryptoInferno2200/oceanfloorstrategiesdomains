@@ -38,6 +38,20 @@
     ul.rows li.empty { display:block; color:var(--muted); }
     a.ghost-link { display:block; margin-top:12px; padding:12px 14px; border-radius:12px; text-align:center; color:var(--fg); text-decoration:none; font-size:14px; box-shadow:0 0 0 1px var(--line); }
     a.ghost-link[hidden] { display:none; }
+    .avatar-row { display:flex; align-items:center; gap:16px; margin-top:14px; }
+    .avatar-big { flex:0 0 auto; display:flex; align-items:center; justify-content:center; width:88px; height:88px; border-radius:50%; overflow:hidden; background:#cfe4dc; color:var(--bg); font:400 32px/1 Georgia,serif; box-shadow:0 0 0 2px var(--line); }
+    .avatar-big img { width:100%; height:100%; object-fit:cover; display:block; }
+    .avatar-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .avatar-actions button, .avatar-actions label.pick { width:auto; height:40px; margin:0; padding:0 14px; display:inline-flex; align-items:center; border-radius:999px; font-size:13px; }
+    .avatar-actions label.pick { position:relative; overflow:hidden; background:var(--fg); color:var(--bg); font-weight:600; cursor:pointer; }
+    .avatar-actions label.pick input { position:absolute; inset:0; width:100%; height:100%; padding:0; opacity:0; cursor:pointer; box-shadow:none; }
+    .avatar-actions label.pick:focus-within { outline:2px solid #cfe4dc; outline-offset:3px; }
+    .avatar-actions button.ghost { background:transparent; color:var(--fg); font-weight:500; box-shadow:0 0 0 1px var(--line); }
+    .avatar-actions [hidden] { display:none; }
+    .ok { color:#cfe4dc; font-size:13px; margin-top:8px; }
+    .actions { display:grid; gap:0 12px; grid-template-columns:1fr; }
+    @media (min-width: 560px) { .actions { grid-template-columns:1fr 1fr; } }
+    button.secondary { background:transparent; color:var(--fg); box-shadow:0 0 0 1px var(--line); }
     button.row-del { width:auto; height:auto; margin:0; padding:4px 10px; border-radius:999px; background:transparent; color:#e0b7b0; font-weight:500; font-size:12px; box-shadow:0 0 0 1px var(--line); }
   </style>
   <link rel="stylesheet" href="./reef-bg.css" />
@@ -69,7 +83,21 @@
       <div class="k">Account</div>
       <h2 style="font-family:Georgia,serif;font-weight:400;margin:8px 0" id="account-name">Loading your profile…</h2>
       <p class="lead" style="margin:8px 0 0" id="vault-who">Checking your sign-in.</p>
-      <a class="ghost-link" id="account-signin" href="home.html" hidden>Sign in on Home</a>
+      <div id="avatar-box" hidden>
+        <div class="avatar-row">
+          <div class="avatar-big" id="avatar-preview" aria-hidden="true"></div>
+          <div>
+            <div class="k">Profile photo</div>
+            <div class="avatar-actions" style="margin-top:8px">
+              <label class="pick" for="avatar-file">Upload photo<input id="avatar-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" /></label>
+              <button type="button" class="ghost" id="avatar-remove" hidden>Remove</button>
+            </div>
+            <p class="lead" style="margin:8px 0 0;font-size:12px">PNG, JPEG, WebP, or GIF. Shown in the top corner on every page.</p>
+          </div>
+        </div>
+        <p class="miss" id="avatar-err" role="status"></p>
+      </div>
+      <a class="ghost-link" id="account-signin" href="home.html?signin=1&amp;next=profile.html" hidden>Sign in on Home</a>
     </div>
     <div class="card" id="vault">
       <div class="k">Vault</div>
@@ -158,7 +186,11 @@
       </select>
       <label><input type="checkbox" id="brandToken" disabled /> Create brand token in Haven — coming soon</label>
       <p class="miss" id="miss"></p>
-      <button type="submit" id="go" disabled>Go live</button>
+      <p class="ok" id="saved" role="status"></p>
+      <div class="actions">
+        <button type="button" class="secondary" id="save">Save profile</button>
+        <button type="submit" id="go" disabled>Go live</button>
+      </div>
     </form>
     <div class="card" id="out" hidden>
       <div class="k">Ready</div>
@@ -174,5 +206,6 @@
 <script src="./mail.js"></script>
 <script src="./support.js"></script>
   <script src="./reef-bg.js"></script>
+  <script type="module" src="./avatar.js"></script>
 </body>
 </html>

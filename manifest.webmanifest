@@ -1,19 +1,30 @@
 {
+  "id": "/home.html",
   "name": "OFS Domains",
   "short_name": "OFS Domains",
   "description": "Claim a real name. Generate the site. Go live. Web and Web3 included.",
-  "start_url": "./home.html",
-  "scope": "./",
+  "start_url": "/home.html?source=app",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#041016",
   "theme_color": "#041016",
   "lang": "en",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
+  "prefer_related_applications": false,
   "icons": [
-    {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    }
+    { "src": "/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/assets/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Sauce Button", "short_name": "Sauce", "url": "/sauce.html?source=app", "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Workspace", "url": "/workspace.html?source=app", "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Vault", "url": "/vault.html?source=app", "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Profile", "url": "/profile.html?source=app", "icons": [{ "src": "/assets/icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }

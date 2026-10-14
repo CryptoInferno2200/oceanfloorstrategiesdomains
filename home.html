@@ -15,6 +15,11 @@
   <title>OFS Domains — Claim. Generate. Go live.</title>
   <link rel="canonical" href="https://www.ofsdomains.com/" />
   <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="OFS Domains" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   <link rel="icon" href="./icon.svg" />
   <link rel="preload" href="./auth.js" as="script" />
   <style>
@@ -28,8 +33,8 @@
     .brand .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
     .brand h1 { font-family: Georgia, serif; font-weight:400; letter-spacing:-.04em; font-size: clamp(1.8rem, 5vw, 2.6rem); margin: 6px 0 0; display:flex; align-items:center; gap:12px; }
     .brand-logo { flex:0 0 auto; width:1.2em; height:1.2em; border-radius:22%; box-shadow:0 0 0 1px var(--line); }
-    .account { position: relative; flex: 0 0 auto; }
-    .tabs { display:flex; gap:6px; }
+    .account { position: relative; flex: 0 1 auto; min-width:0; margin-left:auto; }
+    .tabs { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:6px; }
     .tabs button {
       border:0; background:transparent; color:var(--muted); font: inherit; font-size:13px;
       min-height:44px; padding:10px 14px; border-radius:999px; box-shadow:0 0 0 1px var(--line); cursor:pointer;
@@ -40,6 +45,7 @@
       width:min(20.5rem, calc(100vw - 2rem));
       max-height:calc(100vh - 6rem); overflow:auto; overscroll-behavior:contain;
       padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); pointer-events:auto;
+      overflow-wrap:anywhere;
     }
     .panel[hidden] { display:none; }
     button[hidden] { display:none !important; }
@@ -282,6 +288,7 @@
         <a href="vault.html">Vault</a>
         <a href="host.html">Host</a>
         <a href="sauce.html">Sauce</a>
+        <a href="app.html">Get the app</a>
       </div>
     </nav>
     <div class="row">
@@ -313,7 +320,7 @@
       </article>
     </div>
     <p class="lead" style="margin-top:28px;font-size:13px">Publisher rights stay with the creator. No remix or duplication without consent. <a href="rights.html">Rights</a></p>
-    <footer class="lead site-foot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="rights.html">Rights</a></footer>
+    <footer class="lead site-foot"><a href="app.html">Get the app</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="rights.html">Rights</a></footer>
   </main>
   <script src="./mail.js"></script>
 <script src="./auth.js"></script>

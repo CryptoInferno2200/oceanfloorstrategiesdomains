@@ -11,9 +11,10 @@ const STYLE = `
   #ofs-avatar-btn img{display:block;width:100%;height:100%;object-fit:cover}
   #ofs-avatar-menu{position:absolute;right:0;top:calc(100% + 8px);width:min(16rem,calc(100vw - 24px));padding:12px;border-radius:14px;background:rgba(8,22,28,.97);color:#eef4f2;box-shadow:0 0 0 1px rgba(238,244,242,.12),0 12px 32px rgba(0,0,0,.45)}
   #ofs-avatar-menu[hidden]{display:none}
-  #ofs-avatar-menu .who{margin:0 0 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #ofs-avatar-menu .who{margin:0 0 10px;overflow-wrap:anywhere;word-break:break-word}
   #ofs-avatar-menu .who small{display:block;color:#9bb0aa;font-size:12px}
   #ofs-avatar-menu a,#ofs-avatar-menu button{display:block;width:100%;height:auto;margin:6px 0 0;padding:10px 12px;border:0;border-radius:10px;background:transparent;color:#eef4f2;box-shadow:0 0 0 1px rgba(238,244,242,.12);font:inherit;text-align:left;text-decoration:none;cursor:pointer}
+  @media (max-width:820px){body.ofs-avatar-on>header{padding-right:72px}}
   #ofs-avatar-menu a:hover,#ofs-avatar-menu button:hover{background:rgba(238,244,242,.06)}
 `;
 
@@ -86,8 +87,10 @@ function mount() {
 }
 
 function paint() {
+  const floating = !document.querySelector("[data-ofs-avatar-slot]");
   if (!current) {
     if (root) root.hidden = true;
+    document.body.classList.remove("ofs-avatar-on");
     return;
   }
   const el = mount();
@@ -115,6 +118,8 @@ function paint() {
     who.appendChild(small);
   }
   el.hidden = false;
+  // The floating avatar sits over the page header, so keep header text clear of it.
+  document.body.classList.toggle("ofs-avatar-on", floating);
 }
 
 async function refresh(user) {

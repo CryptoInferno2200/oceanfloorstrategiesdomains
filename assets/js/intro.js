@@ -60,22 +60,75 @@
 
   /* ---------- Tour content ---------- */
   const HOST_NAME = "Marina";
+  /* Each scene plays an animated screen of the page it describes; `cta` links straight to that page. */
   const SCENES = [
-    { icon: "🌊", title: "Welcome to OFS Domains", body: "Claim a real name, let AI build the site, and go live on web and Web3.",
+    { icon: "🌊", title: "Welcome to OFS Domains", short: "Welcome", body: "Claim a real name, let AI build the site, and go live on web and Web3.",
+      url: "home", cta: { label: "Explore Home", href: "home.html", focus: "#home-intro" }, screen: "welcome",
       say: "Hi, I'm Marina, your guide to O F S Domains. In about a minute, I'll show you how to go from an idea to a live website." },
     { icon: "💬", title: "1 · Describe it", body: "Tell the build desk on Home what you want. Attach files with the + button.",
+      url: "home", cta: { label: "Open the build desk", href: "home.html", focus: "#ai-prompt" }, screen: "describe",
       say: "Start right here on Home. Tell the build desk what you want to build, in your own words. You can attach images, documents, or a zip with the plus button. When it suggests a build, tap Open build workflow, and your brief comes with you." },
     { icon: "✍️", title: "2 · Check the brief", body: "Edit the brief, business name, logo, and description. The name comes from your brief.",
+      url: "auto", cta: { label: "Go to Auto", href: "auto.html" }, screen: "brief",
       say: "Next, check your brief. You can edit the business name, logo, and description. Your domain name is built from the first words of your brief." },
     { icon: "⚙️", title: "3 · Run the platform", body: "It picks the name and plan, and lists it on web, Web3, or both at no extra cost.",
+      url: "auto", cta: { label: "Run the platform", href: "auto.html" }, screen: "run",
       say: "Then run the platform. It picks the name and the plan for you. Claim is ten dollars, O F S One is ninety nine, and Abyss One is two ninety nine a month. Listing on the web, Web3, or both costs nothing extra." },
     { icon: "🏠", title: "4 · Profile and site", body: "Your profile and hosted site are saved — and linked to your account when signed in.",
+      url: "profile", cta: { label: "Open Profile", href: "profile.html" }, screen: "profile",
       say: "Your profile and hosted site are saved automatically. Sign in, and every project is kept safely on your account." },
     { icon: "💳", title: "5 · Pay", body: "Checkout opens with your quote through Stripe.",
+      url: "checkout", cta: { label: "Open Checkout", href: "checkout.html" }, screen: "pay",
       say: "When you're ready, checkout opens with your quote, and you pay securely through Stripe." },
     { icon: "🚀", title: "6 · Go live", body: "Go Live binds the name and publishes your site. Manage it any time from Host, Profile, and Vault.",
+      url: "live", cta: { label: "Go live", href: "live.html" }, screen: "live",
       say: "Finally, Go Live binds your name and publishes your site. You can manage everything later from Host, Profile, and Vault. That's it! Tap the build desk and tell me what you'd like to create." },
   ];
+
+  /* Always-visible shortcuts into the platform. */
+  const PLATFORM_LINKS = [
+    ["Build desk", "home.html", "#ai-prompt"], ["Auto", "auto.html"], ["Zip drop", "drop.html"], ["Products", "bundle.html"],
+    ["Profile", "profile.html"], ["Vault", "vault.html"], ["Host", "host.html"], ["Sauce", "sauce.html"],
+  ];
+
+  /* Mock screens. `data-tgt` is where the cursor clicks; `data-type` text types itself out; `.after` shows once clicked. */
+  const NAV_PILLS = '<div class="m-nav"><b>Home</b><b>Auto</b><b>Zip drop</b><b>Products</b><b>Profile</b><b>Vault</b><b>Host</b><b>Sauce</b></div>';
+  const SCREENS = {
+    welcome:
+      NAV_PILLS +
+      '<div class="m-k">Ocean Floor Strategies</div>' +
+      '<div class="m-h1"><span class="m-w">Claim.</span> <span class="m-w">Generate.</span> <span class="m-w">Go live.</span></div>' +
+      '<div class="m-row"><span class="m-btn" data-tgt>Press the Sauce Button</span><span class="m-btn ghost">Run the platform</span><span class="m-btn ghost">Drop a zip</span></div>',
+    describe:
+      '<div class="m-k">OFS build desk</div><div class="m-h2">Ask anything. Build anything.</div>' +
+      '<div class="m-bubble on-typed">Great idea — I can build that. Open the build workflow to continue.</div>' +
+      '<div class="m-compose"><span class="m-plus">+</span><span class="m-file">menu.pdf</span><span class="m-input" data-type="A bakery site with online orders and a weekly menu"></span><span class="m-send">➤</span></div>' +
+      '<span class="m-pill on-typed" data-tgt>Open build workflow →</span>',
+    brief:
+      '<div class="m-k">AI Automation</div><div class="m-h2">Check the brief</div>' +
+      '<div class="m-grid2"><div class="m-field"><i>Business name</i><span data-type="Sunrise Bakery"></span></div>' +
+      '<div class="m-field m-logo"><i>Logo</i><span class="m-logo-mark">☀</span></div></div>' +
+      '<div class="m-field"><i>Description</i><span data-type="Fresh bread, pastries, and pre-orders every morning."></span></div>' +
+      '<div class="m-row"><span class="m-chip">Name · sunrisebakery</span><span class="m-btn" data-tgt>Save brief</span><span class="m-ok after">✓ Saved</span></div>',
+    run:
+      '<div class="m-k">Run the platform</div>' +
+      '<div class="m-plans"><div class="m-plan"><i>Claim</i><b>$10</b></div><div class="m-plan pick" data-tgt><i>OFS One</i><b>$99</b></div><div class="m-plan"><i>Abyss One</i><b>$299<small>/mo</small></b></div></div>' +
+      '<div class="m-row"><span class="m-seg"><b>Web</b><b>Web3</b><b class="on">Both</b></span><span class="m-chip">Listing · $0 extra</span></div>',
+    profile:
+      '<div class="m-k">Profile</div>' +
+      '<div class="m-prof"><span class="m-avatar">SB</span><div><b>Sunrise Bakery</b><i>Signed in · saved to your account</i></div></div>' +
+      '<div class="m-list"><div><span>sunrisebakery</span><em>Hosted site</em><b class="m-ok">✓ Saved</b></div>' +
+      '<div data-tgt><span>Profile</span><em>Logo · description</em><b class="m-ok">✓ Synced</b></div></div>',
+    pay:
+      '<div class="m-k">Checkout</div>' +
+      '<div class="m-receipt"><div><span>sunrisebakery · OFS One</span><b>$99</b></div><div><span>Listing · Web + Web3</span><b>$0</b></div>' +
+      '<div><span>Privacy · SSL</span><b>$0</b></div><div class="tot"><span>Due today</span><b>$99</b></div></div>' +
+      '<div class="m-row"><span class="m-btn stripe" data-tgt>Pay securely with Stripe</span><span class="m-ok after">✓ Paid</span></div>',
+    live:
+      '<div class="m-k">Go live</div><div class="m-h2">sunrisebakery</div>' +
+      '<div class="m-row"><span class="m-btn" data-tgt>🚀 Go Live</span><span class="m-ok after">✓ Bound · Published</span></div>' +
+      '<div class="m-tiles after"><b>Host</b><b>Profile</b><b>Vault</b></div>',
+  };
 
   const FEMALE_VOICE = /(female|woman|samantha|victoria|karen|moira|tessa|fiona|serena|allison|ava|susan|zira|aria|jenny|sonia|libby|natasha|hazel|catherine|joanna|salli|kendra|kimberly|ivy|emma|olivia|google uk english female|google us english)/i;
   const MALE_VOICE = /(male\b|daniel|alex|fred|david|mark|george|guy|ryan|tom|aaron|arthur|oliver|rishi|gordon|thomas|james|google uk english male)/i;
@@ -129,6 +182,7 @@
         '<div class="ofs-tour-head"><div><div class="k">Video tour</div><h2 id="ofs-tour-title">How OFS Domains works</h2></div>' +
         '<button type="button" class="ofs-tour-x" aria-label="Close tour">×</button></div>' +
         '<div class="ofs-stage"></div>' +
+        '<div class="ofs-goto" hidden><span class="ofs-goto-where"></span><a class="ofs-goto-btn" href="home.html"></a></div>' +
         '<div class="ofs-chapters" aria-label="Chapters"></div>' +
         '<div class="ofs-progress" aria-label="Tour steps"></div>' +
         '<p class="ofs-caption" aria-live="polite"></p>' +
@@ -141,6 +195,9 @@
           '<label><input type="checkbox" data-act="hide" /> Don\'t show again</label>' +
           '<button type="button" data-act="close">Start exploring</button>' +
         '</div>' +
+        '<nav class="ofs-platform" aria-label="Jump into the platform"><span class="k">Jump into the platform</span>' +
+          PLATFORM_LINKS.map((l) => '<a href="' + l[1] + '"' + (l[2] ? ' data-focus="' + l[2] + '"' : "") + ">" + l[0] + "</a>").join("") +
+        "</nav>" +
       '</div>';
     document.body.appendChild(wrap);
 
@@ -148,11 +205,13 @@
     const stage = $(".ofs-stage"), caption = $(".ofs-caption"), progress = $(".ofs-progress"), chapters = $(".ofs-chapters");
     const btnToggle = $('[data-act="toggle"]'), btnPrev = $('[data-act="prev"]'), btnNext = $('[data-act="next"]'), btnMute = $('[data-act="mute"]');
     const hideBox = $('[data-act="hide"]');
+    const goto = $(".ofs-goto"), gotoWhere = $(".ofs-goto-where"), gotoBtn = $(".ofs-goto-btn");
     hideBox.checked = store.get(localStorage, TOUR_HIDE_KEY) === "1";
     hideBox.addEventListener("change", () => hideBox.checked ? store.set(localStorage, TOUR_HIDE_KEY, "1") : store.del(localStorage, TOUR_HIDE_KEY));
 
     let mode = "narrated", videos = [], idx = 0, playing = false, started = false, muted = false;
-    let lastFocus = null, rafId = 0, timer = 0, token = 0;
+    let lastFocus = null, rafId = 0, timer = 0, token = 0, wordTimer = 0, fx = [];
+    const WORD_MS = 370;
     const speechOK = "speechSynthesis" in window && typeof SpeechSynthesisUtterance === "function";
 
     /* Recorded videos from the manifest, when present. */
@@ -174,9 +233,11 @@
         b.addEventListener("click", () => go(i, true));
         progress.appendChild(b);
       }
-      if (mode === "video" && videos.length > 1) videos.forEach((v, i) => {
+      const parts = mode === "video" ? (videos.length > 1 ? videos.map((v, i) => v.title || "Part " + (i + 1)) : [])
+        : SCENES.map((s) => s.short || s.title.replace(/^\d+ · /, ""));
+      parts.forEach((label, i) => {
         const b = el("button", { type: "button" });
-        b.textContent = v.title || "Part " + (i + 1);
+        b.textContent = label;
         b.addEventListener("click", () => go(i, true));
         chapters.appendChild(b);
       });
@@ -192,10 +253,102 @@
     }
 
     function renderNarrated() {
-      const p = el("div", { class: "ofs-presenter" });
-      p.innerHTML = '<div class="ofs-host">' + HOST_SVG + '<span class="ofs-host-name">' + HOST_NAME + ' · guide</span></div><div class="ofs-scene"></div>';
-      stage.appendChild(p);
+      const v = el("div", { class: "ofs-video" });
+      v.innerHTML =
+        '<div class="ofs-win" aria-hidden="true"><div class="ofs-win-bar"><i></i><i></i><i></i><span class="ofs-url"></span></div>' +
+        '<div class="ofs-screen"></div><span class="ofs-cursor"></span></div>' +
+        '<div class="ofs-chip" aria-hidden="true"></div>' +
+        '<div class="ofs-pip" aria-hidden="true">' + HOST_SVG + '<span>' + HOST_NAME + '</span></div>' +
+        '<div class="ofs-words" aria-hidden="true"></div>';
+      stage.appendChild(v);
     }
+
+    /* ---- Narrated "video": animated screen, cursor, and word-by-word captions ---- */
+    const q = (s) => stage.querySelector(s);
+    function later(ms, fn) { const my = token; fx.push(setTimeout(() => { if (my === token) fn(); }, reduce ? 0 : ms)); }
+
+    function paintScreen(s) {
+      const screen = q(".ofs-screen"), cursor = q(".ofs-cursor");
+      screen.className = "ofs-screen s-" + s.screen;
+      screen.style.animation = "none"; void screen.offsetWidth; screen.style.animation = "";
+      screen.innerHTML = SCREENS[s.screen];
+      screen.querySelectorAll("[data-type]").forEach((n) => { n.textContent = ""; });
+      cursor.className = "ofs-cursor";
+      cursor.style.left = "78%"; cursor.style.top = "84%";
+      q(".ofs-url").textContent = "ofsdomains.com/" + s.url;
+      q(".ofs-chip").textContent = s.icon + "  " + s.title;
+    }
+
+    function moveCursor() {
+      const win = q(".ofs-win"), screen = q(".ofs-screen"), cursor = q(".ofs-cursor"), tgt = screen.querySelector("[data-tgt]");
+      if (!tgt || !win.offsetWidth) return;
+      const w = win.getBoundingClientRect(), r = tgt.getBoundingClientRect();
+      cursor.classList.add("on");
+      cursor.style.left = (((r.left - w.left + r.width * 0.6) / w.width) * 100).toFixed(2) + "%";
+      cursor.style.top = (((r.top - w.top + r.height * 0.55) / w.height) * 100).toFixed(2) + "%";
+    }
+
+    function finishScreen() {
+      const screen = q(".ofs-screen");
+      screen.querySelectorAll("[data-type]").forEach((n) => { n.textContent = n.dataset.type; });
+      screen.classList.add("typed", "clicked");
+      moveCursor();
+    }
+
+    function playScreen(est) {
+      paintScreen(SCENES[idx]);
+      const screen = q(".ofs-screen"), cursor = q(".ofs-cursor");
+      let t = 600;
+      screen.querySelectorAll("[data-type]").forEach((n) => {
+        const full = n.dataset.type, per = Math.min(55, (est * 0.3) / full.length);
+        for (let i = 1; i <= full.length; i++) later(t + i * per, () => { n.textContent = full.slice(0, i); });
+        t += full.length * per + 250;
+      });
+      later(t, () => screen.classList.add("typed"));
+      const moveAt = Math.max(t + 500, est * 0.45);
+      later(moveAt, moveCursor);
+      later(moveAt + 950, () => { cursor.classList.add("click"); screen.classList.add("clicked"); });
+    }
+
+    function showWords(text, lit) {
+      const box = q(".ofs-words");
+      if (!box) return;
+      box.innerHTML = "";
+      text.split(/\s+/).forEach((w, i) => {
+        const sp = el("span", { class: i < lit ? "said" : "" });
+        sp.textContent = w;
+        box.append(sp, " ");
+      });
+    }
+    function lightWord(i) {
+      [...q(".ofs-words").children].forEach((sp, n) => { sp.classList.toggle("said", n < i); sp.classList.toggle("now", n === i); });
+    }
+
+    function showGoto(cta, where) {
+      goto.hidden = !cta;
+      if (!cta) return;
+      gotoWhere.textContent = where;
+      gotoBtn.textContent = cta.label + " →";
+      gotoBtn.href = cta.href;
+      if (cta.focus) gotoBtn.dataset.focus = cta.focus; else delete gotoBtn.dataset.focus;
+    }
+
+    /* Links into the platform: Home targets stay on this page (close the tour and jump there); others navigate. */
+    function onNavClick(e) {
+      const a = e.target.closest("a[href]");
+      if (!a) return;
+      stopNarration();
+      store.set(sessionStorage, TOUR_SESSION_KEY, "1");
+      if (/^home\.html/.test(a.getAttribute("href"))) {
+        e.preventDefault();
+        const sel = a.dataset.focus;
+        lastFocus = (sel && document.querySelector(sel)) || lastFocus;
+        close();
+        if (sel && lastFocus && lastFocus.scrollIntoView) lastFocus.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+      }
+    }
+    goto.addEventListener("click", onNavClick);
+    $(".ofs-platform").addEventListener("click", onNavClick);
 
     let video = null;
     function renderVideo() {
@@ -228,16 +381,14 @@
           if (v.captions) video.appendChild(el("track", { kind: "captions", src: v.captions, srclang: "en", label: "English", default: "" }));
         }
         if (v.title) $("#ofs-tour-title").textContent = v.title;
+        showGoto(v.href ? { label: v.cta || "Open", href: v.href } : null, "");
       } else {
-        const s = SCENES[idx], scene = stage.querySelector(".ofs-scene");
-        scene.classList.remove("enter");
-        scene.innerHTML = '<div class="ofs-scene-icon" aria-hidden="true">' + s.icon + '</div><div class="ofs-scene-step">STEP ' + (idx + 1) + " OF " + SCENES.length + "</div><h3></h3><p></p>";
-        scene.querySelector("h3").textContent = s.title;
-        scene.querySelector("p").textContent = s.body;
-        void scene.offsetWidth;
-        scene.classList.add("enter");
+        const s = SCENES[idx];
+        paintScreen(s);
+        showWords(s.body, Infinity);
         caption.hidden = false;
         caption.textContent = s.say;
+        showGoto(s.cta, "Step " + (idx + 1) + " of " + SCENES.length + " · ofsdomains.com/" + s.url);
       }
       sync();
     }
@@ -247,7 +398,8 @@
 
     function stopNarration() {
       token++;
-      cancelAnimationFrame(rafId); clearTimeout(timer);
+      cancelAnimationFrame(rafId); clearTimeout(timer); clearInterval(wordTimer);
+      fx.forEach(clearTimeout); fx = [];
       if (speechOK) speechSynthesis.cancel();
       wrap.classList.remove("ofs-speaking");
     }
@@ -273,25 +425,37 @@
         if (idx < SCENES.length - 1) timer = setTimeout(() => { if (my === token) { showStep(idx + 1); speakScene(); } }, 700);
         else complete();
       };
-      if (muted || !speechOK) { timer = setTimeout(advance, est + 600); return; }
+      playScreen(est);
       // Speak sentence by sentence — long single utterances get cut off in some browsers.
       const parts = s.say.match(/[^.!?]+[.!?]*/g) || [s.say];
-      const voice = pickVoice();
+      const speak = !muted && speechOK, voice = speak ? pickVoice() : null;
       let n = 0, watchdog = 0;
       const next = () => {
         if (my !== token) return;
-        clearTimeout(watchdog);
+        clearTimeout(watchdog); clearInterval(wordTimer);
         if (n >= parts.length) return advance();
-        const u = new SpeechSynthesisUtterance(parts[n++].trim());
+        const text = parts[n++].trim(), count = text.split(/\s+/).length;
+        let w = 0, exact = false;
+        const tickWord = () => { if (my === token && !exact && w < count) lightWord(w++); };
+        const startWords = () => { tickWord(); wordTimer = setInterval(tickWord, WORD_MS); };
+        showWords(text, 0);
+        if (!speak) { startWords(); watchdog = setTimeout(next, count * WORD_MS + 300); return; }
+        const u = new SpeechSynthesisUtterance(text);
         if (voice) { u.voice = voice; u.lang = voice.lang; } else u.lang = "en-US";
         u.rate = 0.98; u.pitch = voice && FEMALE_VOICE.test(voice.name) ? 1.05 : 1.2;
-        u.onstart = () => { if (my === token) wrap.classList.add("ofs-speaking"); };
+        u.onstart = () => { if (my === token) { wrap.classList.add("ofs-speaking"); startWords(); } };
+        // Word boundaries (where supported) keep the highlighted word exactly in step with the voice.
+        u.onboundary = (e) => {
+          if (my !== token || (e.name && e.name !== "word")) return;
+          exact = true; clearInterval(wordTimer);
+          lightWord(text.slice(0, e.charIndex).split(/\s+/).filter(Boolean).length);
+        };
         let done = false;
         const once = () => { if (!done) { done = true; next(); } };
         u.onend = once;
         u.onerror = (e) => { if (my === token && e.error !== "interrupted" && e.error !== "canceled") once(); };
         // If the browser never fires end (some mobile engines), keep the tour moving.
-        watchdog = setTimeout(once, Math.max(4000, u.text.split(/\s+/).length * 700));
+        watchdog = setTimeout(once, Math.max(4000, count * 700));
         speechSynthesis.speak(u);
       };
       next();
@@ -302,7 +466,7 @@
       delete btnToggle.dataset.replay;
       if (!started) { started = true; const st = stage.querySelector(".ofs-start"); if (st) st.hidden = true; }
       showStep(i);
-      if (!autoplay) { if (mode === "video") video.pause(); playing = false; sync(); return; }
+      if (!autoplay) { if (mode === "video") video.pause(); else finishScreen(); playing = false; sync(); return; }
       if (mode === "video") { const p = video.play(); if (p && p.catch) p.catch(() => { playing = false; sync(); }); }
       else speakScene();
     }
@@ -341,7 +505,7 @@
     wrap.addEventListener("keydown", (e) => {
       if (e.key === "Escape") { e.preventDefault(); close(); return; }
       if (e.key === "Tab") {
-        const f = [...wrap.querySelectorAll("button:not([disabled]):not([hidden]), input, video[controls]")].filter((x) => x.offsetParent !== null);
+        const f = [...wrap.querySelectorAll("button:not([disabled]):not([hidden]), input, a[href], video[controls]")].filter((x) => x.offsetParent !== null);
         if (!f.length) return;
         const first = f[0], last = f[f.length - 1];
         if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }

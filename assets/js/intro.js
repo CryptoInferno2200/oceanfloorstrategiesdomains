@@ -82,19 +82,19 @@
     { icon: "💳", title: "5 · Pay", body: "Checkout opens with your quote through Stripe.",
       url: "checkout", cta: { label: "Open Checkout", href: "checkout.html" }, screen: "pay",
       say: "When you're ready, checkout opens with your quote, and you pay securely through Stripe." },
-    { icon: "🚀", title: "6 · Go live", body: "Go Live binds the name and publishes your site. Manage it any time from Host, Profile, and Vault.",
+    { icon: "🚀", title: "6 · Go live", body: "Go Live binds the name and publishes your site. Manage it any time from Claim name, Profile, and Vault.",
       url: "live", cta: { label: "Go live", href: "live.html" }, screen: "live",
-      say: "Finally, Go Live binds your name and publishes your site. You can manage everything later from Host, Profile, and Vault. That's it! Tap the build desk and tell me what you'd like to create." },
+      say: "Finally, Go Live binds your name and publishes your site. You can manage everything later from Claim name, Profile, and Vault. That's it! Tap the build desk and tell me what you'd like to create." },
   ];
 
   /* Always-visible shortcuts into the platform. */
   const PLATFORM_LINKS = [
     ["Build desk", "home.html", "#ai-prompt"], ["Auto", "auto.html"], ["Zip drop", "drop.html"], ["Products", "bundle.html"],
-    ["Profile", "profile.html"], ["Vault", "vault.html"], ["Host", "host.html"], ["Sauce", "sauce.html"],
+    ["Profile", "profile.html"], ["Vault", "vault.html"], ["Claim name", "name.html"], ["Sauce", "sauce.html"],
   ];
 
   /* Mock screens. `data-tgt` is where the cursor clicks; `data-type` text types itself out; `.after` shows once clicked. */
-  const NAV_PILLS = '<div class="m-nav"><b>Home</b><b>Auto</b><b>Zip drop</b><b>Products</b><b>Profile</b><b>Vault</b><b>Host</b><b>Sauce</b></div>';
+  const NAV_PILLS = '<div class="m-nav"><b>Home</b><b>Auto</b><b>Zip drop</b><b>Products</b><b>Profile</b><b>Vault</b><b>Claim name</b><b>Sauce</b></div>';
   const SCREENS = {
     welcome:
       NAV_PILLS +
@@ -129,7 +129,7 @@
     live:
       '<div class="m-k">Go live</div><div class="m-h2">sunrisebakery</div>' +
       '<div class="m-row"><span class="m-btn" data-tgt>🚀 Go Live</span><span class="m-ok after">✓ Bound · Published</span></div>' +
-      '<div class="m-tiles after"><b>Host</b><b>Profile</b><b>Vault</b></div>',
+      '<div class="m-tiles after"><b>Claim name</b><b>Profile</b><b>Vault</b></div>',
   };
 
   const FEMALE_VOICE = /(female|woman|samantha|victoria|karen|moira|tessa|fiona|serena|allison|ava|susan|zira|aria|jenny|sonia|libby|natasha|hazel|catherine|joanna|salli|kendra|kimberly|ivy|emma|olivia|google uk english female|google us english)/i;

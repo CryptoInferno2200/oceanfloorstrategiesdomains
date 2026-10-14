@@ -52,7 +52,7 @@ const zone = document.getElementById("zone");
       try {
         const project = await OFSZip.start(pack, fqdn);
         document.getElementById("live").hidden = false;
-        document.getElementById("run").textContent = project.name + " is on Host. Preview is the start file; external resources and scripts may be blocked.";
+        document.getElementById("run").textContent = project.name + " is saved. Preview is the start file; external resources and scripts may be blocked.";
         const href = OFSZip.preview(project);
         if (href) {
           const frame = document.getElementById("frame");

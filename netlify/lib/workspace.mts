@@ -159,3 +159,91 @@ ${tail}
 </body>
 </html>`;
 }
+
+// Stand-in for the workspace bridge so an exported site runs anywhere, storing records in the browser.
+const OFSDB_SHIM = `// ofsdb outside OFS: same calls as the workspace, records kept in this browser's localStorage.
+// Swap these four functions for your own backend when you deploy.
+(() => {
+  const KEY = "ofsdb:records";
+  const read = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
+  const write = (rows) => localStorage.setItem(KEY, JSON.stringify(rows));
+  const now = () => new Date().toISOString();
+  window.ofsdb = {
+    async list(collection, options = {}) {
+      const limit = Math.min(Math.max(Number(options.limit) || 100, 1), 500);
+      return read().filter((r) => r.collection === collection).reverse().slice(0, limit);
+    },
+    async add(collection, data) {
+      const rows = read();
+      const record = { id: rows.reduce((max, r) => Math.max(max, r.id), 0) + 1, collection, data, created_at: now(), updated_at: now() };
+      write([...rows, record]);
+      return record;
+    },
+    async update(id, data) {
+      const rows = read();
+      const record = rows.find((r) => r.id === Number(id));
+      if (!record) throw new Error("Record not found.");
+      Object.assign(record, { data, updated_at: now() });
+      write(rows);
+      return record;
+    },
+    async remove(id) {
+      write(read().filter((r) => r.id !== Number(id)));
+      return true;
+    },
+  };
+})();
+`;
+
+// The sandbox files as a standalone static site: styles.css, ofsdb.js and app.js load from index.html.
+export function exportFiles(project: OwnedProject, files: Record<FilePath, string>) {
+  const name = project.name || project.fqdn;
+  const head = `<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="styles.css" />
+<script src="ofsdb.js"></script>`;
+  const tail = `<script src="app.js"></script>`;
+  const html = files["index.html"];
+  let index: string;
+  if (/<html[\s>]/i.test(html)) {
+    const withHead = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, `${head}\n</head>`) : html.replace(/<html[^>]*>/i, (m) => `${m}<head>${head}</head>`);
+    index = /<\/body>/i.test(withHead) ? withHead.replace(/<\/body>(?![\s\S]*<\/body>)/i, `${tail}\n</body>`) : withHead + tail;
+  } else {
+    index = `<!doctype html>
+<html lang="en">
+<head>
+<title>${esc(name)}</title>
+${head}
+</head>
+<body>
+${html}
+${tail}
+</body>
+</html>
+`;
+  }
+  const readme = `# ${name}
+
+${project.description || "Built in the OFS Domains workspace."}
+
+Domain: ${project.fqdn}
+
+## Files
+
+- \`index.html\`: the page
+- \`styles.css\`: styles
+- \`app.js\`: page logic
+- \`ofsdb.js\`: a local stand-in for the OFS workspace database. Records are kept in the visitor's browser (localStorage).
+
+Open \`index.html\` in a browser, or deploy the folder to any static host.
+
+Exported from [OFS Domains](https://www.ofsdomains.com/) before publishing.
+`;
+  return [
+    { path: "index.html", content: index },
+    { path: "styles.css", content: files["styles.css"] },
+    { path: "app.js", content: files["app.js"] },
+    { path: "ofsdb.js", content: OFSDB_SHIM },
+    { path: "README.md", content: readme },
+  ];
+}

@@ -1,3 +1,5 @@
+import { githubButton } from "./github-push.js";
+
 const $ = (id) => document.getElementById(id);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -87,6 +89,8 @@ function card(launch) {
     actions.prepend(flow.open);
     panel = flow.panel;
   }
+  const github = githubButton({ kind: "sauce", id: launch.slug, repo: launch.slug, ghostClass: "btn ghost" });
+  actions.append(github.toggle);
   return el("article", { className: "card", id: "launch-" + launch.slug },
     el("div", { className: "launch" },
       launch.has_logo !== false ? el("img", { src: "/api/sauce-logo/" + launch.slug, alt: b.name + " logo" }) : el("span"),
@@ -102,7 +106,8 @@ function card(launch) {
     kit.email ? el("details", {}, el("summary", { textContent: "Launch kit · announcement email" }), el("p", { className: "lead", textContent: kit.email })) : null,
     section("Launch kit · SEO keywords", kit.keywords && [kit.keywords.join(", ")]),
     actions,
-    panel);
+    panel,
+    github.panel);
 }
 
 async function loadLaunches() {

@@ -1,13 +1,8 @@
 import type { Config } from "@netlify/functions";
 import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
+import { PLANS, firstChargeCents, surchargeCents, tldOf } from "../lib/pricing.mts";
 
-const PLANS: Record<string, { label: string; cents: number; monthly?: boolean }> = {
-  claim: { label: "Claim · name only", cents: 1000 },
-  one: { label: "OFS One", cents: 9900 },
-  "abyss-one": { label: "OFS Abyss One", cents: 29900, monthly: true },
-};
-const TLD_CENTS: Record<string, number> = { com: 1099, net: 1199, org: 1099, app: 1399, ai: 7999, io: 3999, studio: 1999, store: 1399, gg: 1399 };
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
 
 export default async (request: Request) => {
@@ -23,10 +18,9 @@ export default async (request: Request) => {
   if (!product || !["web", "web3", "both"].includes(listing) || !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(fqdn)) {
     return Response.json({ error: "Checkout details are invalid." }, { status: 400 });
   }
-  const tld = fqdn.split(".").pop() || "com";
-  const credit = plan === "claim" ? 1000 : 1099;
-  const surcharge = Math.max(0, (TLD_CENTS[tld] || 1099) - credit);
-  const amount = product.cents + surcharge;
+  const tld = tldOf(fqdn);
+  const surcharge = surchargeCents(plan, tld);
+  const amount = firstChargeCents(plan, tld);
   const user = await getUser();
   const sauce = normalize(body.sauce);
   if (sauce) {

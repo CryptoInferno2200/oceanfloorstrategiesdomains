@@ -5,6 +5,7 @@
   // iPadOS reports itself as a Mac, so check for touch too.
   const ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
   const android = /Android/.test(ua);
+  const firefox = android && /Firefox\//.test(ua);
   const inApp = /FBAN|FBAV|Instagram|Line\/|GSA\/|Twitter|LinkedInApp|Snapchat|TikTok/.test(ua);
   const standalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
 
@@ -27,9 +28,10 @@
     $("ios-inapp").hidden = !inApp;
   } else if (android) {
     $("quick-k").textContent = "Android";
-    $("quick-note").textContent = inApp
-      ? "Open this page in Chrome first, then tap Install app."
+    $("quick-note").textContent = inApp || firefox
+      ? "Open this page in Chrome or Samsung Internet first, then tap Install app."
       : "Tap Install app below, or use the browser menu.";
+    $("android-firefox").hidden = !firefox;
   } else {
     $("quick-k").textContent = "Desktop";
     $("quick-note").textContent = "Install from the address bar, or use the button below when it appears.";

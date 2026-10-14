@@ -1,0 +1,33 @@
+# OFS Domains — self-hosted authoritative DNS (PowerDNS) with a TLS-protected API for the site.
+# Run on each nameserver host: docker compose up -d   (see README.md)
+services:
+  pdns:
+    image: powerdns/pdns-auth-49:latest
+    restart: unless-stopped
+    environment:
+      PDNS_AUTH_API_KEY: ${PDNS_API_KEY:?set PDNS_API_KEY in .env}
+    ports:
+      - "53:53/udp"
+      - "53:53/tcp"
+    volumes:
+      - pdns-data:/var/lib/powerdns
+      - ./pdns.d:/etc/powerdns/pdns.d:ro
+
+  # Terminates HTTPS for the API so the key never travels in clear text. Port 8081 is never published.
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      API_HOST: ${API_HOST:?set API_HOST in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - pdns
+
+volumes:
+  pdns-data:
+  caddy-data:

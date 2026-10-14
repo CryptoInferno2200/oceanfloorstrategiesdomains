@@ -158,7 +158,7 @@ export default async (req: Request, _context: Context) => {
   try {
     const openai = new OpenAI();
     const completion = await openai.chat.completions.create({
-      model: "gpt-5.5",
+      model: "gpt-6.1-sol",
       response_format: { type: "json_object" },
       messages: [
         {

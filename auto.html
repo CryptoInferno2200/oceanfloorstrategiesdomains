@@ -25,6 +25,8 @@
     .card { margin-top:16px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
     ol { margin:8px 0 0; padding-left:20px; color:var(--muted); }
     ol li.done { color:var(--fg); }
+    .guide ol li { margin-top:8px; }
+    .guide ol li b { color:var(--fg); font-weight:600; }
   </style>
   <link rel="stylesheet" href="./reef-bg.css" />
 </head>
@@ -48,6 +50,17 @@
     </nav>
   </header>
   <main>
+    <section class="card guide" aria-labelledby="guide-title">
+      <div class="k" id="guide-title">How the platform works</div>
+      <ol>
+        <li><b>Describe it.</b> On Home, tell the build desk what you want. When it suggests a build, tap <b>Open build workflow</b> and your brief comes with you to this page.</li>
+        <li><b>Check the brief.</b> Edit the brief, business name, logo URL, and description below. The name is built from the first words of the brief.</li>
+        <li><b>Run the platform.</b> Tap <b>Run the platform</b>. It picks the name and plan (Claim $10, OFS One $99, or Abyss One $299/month) and sets the listing to web, Web3, or both.</li>
+        <li><b>Profile and site.</b> Your profile and hosted site are saved. When you are signed in, the project also goes to your account.</li>
+        <li><b>Pay.</b> Checkout opens with your quote. If your account is at its project limit, Abyss One opens instead.</li>
+        <li><b>Go live.</b> After payment, Go live binds the name, issues the year, and publishes the site. Manage it later from Host, Profile, and Vault.</li>
+      </ol>
+    </section>
     <form id="form" class="card">
       <label for="sentence">Brief</label>
       <textarea id="sentence" required>A kelp forest dashboard for the Gulf.</textarea>

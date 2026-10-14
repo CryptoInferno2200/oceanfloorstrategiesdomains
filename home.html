@@ -141,8 +141,23 @@
     .hidden { display:none !important; }
   </style>
   <link rel="stylesheet" href="./reef-bg.css" />
+  <link rel="stylesheet" href="./assets/css/intro.css" />
+  <script src="./assets/js/intro.js"></script>
 </head>
-<body>
+<body data-ofs-tour>
+<div class="ofs-loader" id="ofs-loader" role="status" aria-live="polite" aria-label="Loading OFS Domains">
+  <div class="ofs-bubbles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="ofs-loader-inner">
+    <div class="ofs-sonar" aria-hidden="true"><span></span><img src="./icon.svg" alt="" width="58" height="58" /></div>
+    <div>
+      <div class="ofs-loader-k">Ocean Floor Strategies</div>
+      <p class="ofs-loader-title"><span class="ofs-loader-word">Claim.</span> <span class="ofs-loader-word">Generate.</span> <span class="ofs-loader-word">Go live.</span></p>
+    </div>
+    <div class="ofs-depth" aria-hidden="true"><i></i></div>
+    <div class="ofs-depth-label">Descending · 0 m</div>
+  </div>
+  <button type="button" class="ofs-loader-skip">Skip intro</button>
+</div>
 <canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
 
   <div class="top">
@@ -255,6 +270,7 @@
       <a class="btn ghost" href="auto.html">Run the platform</a>
       <a class="btn ghost" href="name.html">Already have a site · name only $10</a>
       <a class="btn ghost" href="drop.html">Drop a zip</a>
+      <button class="btn ghost" type="button" data-open-tour>▶ Watch the tour</button>
     </div>
   </header>
   <main>

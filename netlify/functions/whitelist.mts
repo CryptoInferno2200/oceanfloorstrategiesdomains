@@ -1,11 +1,14 @@
 import type { Config } from "@netlify/functions";
 import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
+import { rejectCrossOrigin } from "../lib/http.mts";
 
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
 const validEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 export default async (request: Request) => {
+  const rejected = rejectCrossOrigin(request);
+  if (rejected) return rejected;
   const user = await getUser();
   const email = normalize(user?.email);
   const db = getDatabase();

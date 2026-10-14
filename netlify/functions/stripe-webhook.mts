@@ -23,19 +23,82 @@ async function sign(secret: string, payload: string) {
   return [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+async function stripeGet(path: string) {
+  const key = Netlify.env.get("STRIPE_SECRET_KEY");
+  if (!key) throw new Error("Stripe is not configured.");
+  const response = await fetch(`https://api.stripe.com/v1/${path}`, { headers: { Authorization: `Bearer ${key}` } });
+  if (!response.ok) throw new Error(`Stripe ${path.split("?")[0]} returned ${response.status}`);
+  return response.json() as Promise<Record<string, any>>;
+}
+
+// Finds the purchase a charge paid for: a one-time checkout session, or the subscription behind an invoice.
+async function purchaseFor(paymentIntent: string, invoiceId: string) {
+  if (paymentIntent) {
+    const sessions = await stripeGet(`checkout/sessions?payment_intent=${encodeURIComponent(paymentIntent)}&limit=1`);
+    if (sessions.data?.[0]?.id) return { session: String(sessions.data[0].id), subscription: "" };
+    if (!invoiceId) {
+      const payments = await stripeGet(`invoice_payments?payment[type]=payment_intent&payment[payment_intent]=${encodeURIComponent(paymentIntent)}&limit=1`).catch((): Record<string, any> => ({}));
+      invoiceId = String(payments.data?.[0]?.invoice || "");
+    }
+  }
+  if (!invoiceId) return null;
+  const invoice = await stripeGet(`invoices/${encodeURIComponent(invoiceId)}`);
+  const subscription = String(invoice.subscription || invoice.parent?.subscription_details?.subscription || "");
+  return subscription ? { session: "", subscription } : null;
+}
+
+async function reverse(event: { type?: string; data?: { object?: Record<string, any> } }) {
+  const object = event.data?.object || {};
+  // Full refunds and lost disputes end the seat; an open dispute suspends it until Stripe decides.
+  let status = "";
+  let from = ["paid", "pending"];
+  if (event.type === "charge.refunded") status = object.refunded ? "refunded" : "";
+  else if (event.type === "charge.dispute.created") { status = "pending"; from = ["paid"]; }
+  else if (object.status === "won") { status = "paid"; from = ["pending"]; }
+  else if (object.status === "lost") status = "refunded";
+  if (!status) return;
+  const paymentIntent = String(object.payment_intent || "");
+  const invoiceId = String(event.type === "charge.refunded" ? object.invoice || "" : "");
+  const purchase = await purchaseFor(paymentIntent, invoiceId);
+  if (!purchase) return;
+  const db = getDatabase();
+  if (purchase.session) {
+    await db.sql`UPDATE purchase_history SET status = ${status} WHERE id = ${purchase.session} AND status IN (${from[0]}, ${from[from.length - 1]})`;
+    if (status === "refunded") {
+      await db.sql`UPDATE sauce_launches SET status = 'awaiting-payment', updated_at = NOW() WHERE checkout_session_id = ${purchase.session}`;
+    } else if (status === "paid") {
+      await db.sql`UPDATE sauce_launches SET status = 'published', updated_at = NOW() WHERE checkout_session_id = ${purchase.session}`;
+    }
+  } else {
+    await db.sql`UPDATE purchase_history SET status = ${status} WHERE stripe_subscription_id = ${purchase.subscription} AND status IN (${from[0]}, ${from[from.length - 1]})`;
+  }
+}
+
 export default async (request: Request) => {
   if (request.method !== "POST") return new Response("Method not allowed", { status: 405, headers: { Allow: "POST" } });
   const secret = Netlify.env.get("STRIPE_WEBHOOK_SECRET");
   if (!secret) return Response.json({ error: "Payment verification is not configured." }, { status: 503 });
   const raw = await request.text();
-  const parts = Object.fromEntries((request.headers.get("stripe-signature") || "").split(",").map((part) => part.split("=", 2)));
-  const timestamp = Number(parts.t);
-  if (!timestamp || Math.abs(Date.now() / 1000 - timestamp) > 300 || !parts.v1) return new Response("Invalid signature", { status: 400 });
+  // Stripe sends one v1 signature per active secret, so a rotation carries two.
+  const pairs = (request.headers.get("stripe-signature") || "").split(",").map((part) => part.trim().split("=", 2));
+  const timestamp = Number(pairs.find(([key]) => key === "t")?.[1]);
+  const signatures = pairs.filter(([key, value]) => key === "v1" && value).map(([, value]) => value);
+  if (!timestamp || Math.abs(Date.now() / 1000 - timestamp) > 300 || !signatures.length) return new Response("Invalid signature", { status: 400 });
   const expected = await sign(secret, `${timestamp}.${raw}`);
-  if (!safeEqual(expected, parts.v1)) return new Response("Invalid signature", { status: 400 });
+  if (!signatures.some((signature) => safeEqual(expected, signature))) return new Response("Invalid signature", { status: 400 });
 
   let event: { id?: string; type?: string; data?: { object?: Record<string, any> } };
   try { event = JSON.parse(raw); } catch { return new Response("Invalid payload", { status: 400 }); }
+  if (event.type === "charge.refunded" || event.type === "charge.dispute.created" || event.type === "charge.dispute.closed") {
+    try {
+      await reverse(event);
+    } catch (error) {
+      // A 500 makes Stripe retry the event later.
+      console.error("Refund or dispute could not be applied", error);
+      return Response.json({ error: "Could not apply refund or dispute." }, { status: 500 });
+    }
+    return Response.json({ received: true });
+  }
   if (event.type === "invoice.paid" || event.type === "customer.subscription.deleted") {
     // Monthly renewals push renews_at forward; cancellations end the seat.
     const object = event.data?.object || {};

@@ -1,6 +1,7 @@
 import type { Config } from "@netlify/functions";
 import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
+import { rejectCrossOrigin } from "../lib/http.mts";
 
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
 const clean = (value: unknown, max = 160) => String(value || "").trim().slice(0, max);
@@ -10,6 +11,8 @@ const LISTINGS = new Set(["web", "web3", "both"]);
 const validDomain = (value: string) => /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(value);
 
 export default async (request: Request) => {
+  const rejected = rejectCrossOrigin(request);
+  if (rejected) return rejected;
   const user = await getUser();
   const email = normalize(user?.email);
   if (!email) return Response.json({ error: "Sign in to view purchase history." }, { status: 401 });

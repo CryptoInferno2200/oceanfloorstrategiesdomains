@@ -2,6 +2,7 @@ import type { Config, Context } from "@netlify/functions";
 import OpenAI from "openai";
 import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
+import { projectLimitBlock } from "../lib/projects.mts";
 
 // Sauce: one everyday problem → idea, name, launch kit, hosted site. OFS One up front, OFS keeps 50% of proceeds.
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
@@ -71,7 +72,8 @@ async function claimName(db: ReturnType<typeof getDatabase>, candidates: string[
 }
 
 async function uniqueSlug(db: ReturnType<typeof getDatabase>, fqdn: string) {
-  const base = slugify(fqdn.split(".")[0]);
+  // Leave room for a suffix inside the 48-character slug limit.
+  const base = slugify(fqdn.split(".")[0]).slice(0, 30).replace(/-+$/, "") || "sauce";
   for (let i = 0; i < 5; i += 1) {
     const slug = i === 0 ? base : `${base}-${Math.floor(Math.random() * 9000 + 1000)}`;
     const [taken] = await db.sql`SELECT 1 FROM sauce_launches WHERE slug = ${slug}`;
@@ -107,6 +109,10 @@ export default async (req: Request, _context: Context) => {
   const audience = clean(body.audience, 300);
   if (body.acceptTerms !== true) return json({ error: "Accept the Sauce terms (OFS One $99 up front, 50% revenue share) to continue." }, 400);
   if (problem.length < 8) return json({ error: "Describe the everyday problem in a sentence or two." }, 400);
+
+  // Every launch becomes a project, so it counts against the same free limit as /api/projects.
+  const blocked = await projectLimitBlock(db, email);
+  if (blocked) return json(blocked, 402);
 
   const bucket = new Date();
   bucket.setUTCMinutes(0, 0, 0);
@@ -168,13 +174,22 @@ Reply as JSON only:
     return json({ error: "Sauce could not shape the idea. Please try again." }, 502);
   }
 
-  const fqdn = await claimName(db, brief.domains, brief.name);
-  const slug = await uniqueSlug(db, fqdn);
-  const [launch] = await db.sql`
-    INSERT INTO sauce_launches (slug, user_email, fqdn, problem, audience, brief, terms_accepted_at)
-    VALUES (${slug}, ${email}, ${fqdn}, ${problem}, ${audience}, ${JSON.stringify(brief)}::jsonb, NOW())
-    RETURNING id, slug, fqdn, problem, audience, brief, plan, revenue_share_pct, status, created_at
-  `;
+  // Names and slugs are unique; retry with fresh picks if another launch claims the same one first.
+  let launch: Record<string, any> | undefined;
+  let fqdn = "";
+  for (let attempt = 0; !launch; attempt++) {
+    fqdn = await claimName(db, brief.domains, brief.name);
+    const slug = await uniqueSlug(db, fqdn);
+    try {
+      [launch] = await db.sql`
+        INSERT INTO sauce_launches (slug, user_email, fqdn, problem, audience, brief, terms_accepted_at)
+        VALUES (${slug}, ${email}, ${fqdn}, ${problem}, ${audience}, ${JSON.stringify(brief)}::jsonb, NOW())
+        RETURNING id, slug, fqdn, problem, audience, brief, plan, revenue_share_pct, status, created_at
+      `;
+    } catch (error) {
+      if ((error as { code?: string }).code !== "23505" || attempt >= 2) throw error;
+    }
+  }
   await db.sql`
     INSERT INTO projects (user_email, fqdn, name, description, plan, listing)
     VALUES (${email}, ${fqdn}, ${brief.name}, ${brief.tagline || brief.solution}, ${"one"}, ${"both"})

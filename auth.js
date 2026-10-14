@@ -1,6 +1,7 @@
-/** OFS Domains seat. Creator inbox is seeded, never painted. Tokens are hashed. */
+/** OFS Domains local seat cache. Accounts, operator access, and complimentary seats come from Netlify Identity and /api/entitlement. */
 (function (root) {
-  const CREATOR = "oceanfloorstrategies2200@gmail.com";
+  // No browser-side operator: the server decides who is complimentary.
+  const CREATOR = "";
   const KEY = "ofs.domains.seat.v3";
   const TTL_MS = 20 * 60 * 1000;
   const RESEND_MS = 60 * 1000;
@@ -17,12 +18,10 @@
   }
 
   function empty() {
-    return { whitelist: [CREATOR], members: {}, session: null };
+    return { whitelist: [], members: {}, session: null };
   }
 
   function seed(state) {
-    const e = CREATOR;
-    if (!state.whitelist.includes(e)) state.whitelist.unshift(e);
     return state;
   }
 
@@ -31,7 +30,7 @@
       const raw = JSON.parse(localStorage.getItem(KEY) || "null");
       if (!raw || typeof raw !== "object") return seed(empty());
       return seed({
-        whitelist: Array.isArray(raw.whitelist) ? raw.whitelist.map(norm) : [CREATOR],
+        whitelist: Array.isArray(raw.whitelist) ? raw.whitelist.map(norm) : [],
         members: raw.members && typeof raw.members === "object" ? raw.members : {},
         session: raw.session ? norm(raw.session) : null,
       });
@@ -52,12 +51,11 @@
   function listWhitelist() {
     const state = load();
     const rows = state.whitelist.slice();
-    if (!rows.includes(CREATOR)) rows.unshift(CREATOR);
     return rows.map((email) => {
       const m = state.members[email];
       return {
         email,
-        operator: email === CREATOR,
+        operator: false,
         verified: Boolean(m && m.verified),
         pending: Boolean(m && !m.verified),
         status: m && m.verified ? "verified" : m ? "pending" : "invited",
@@ -93,7 +91,7 @@
   }
 
   function isCreator(email) {
-    return norm(email) === CREATOR;
+    return false;
   }
 
   function invited(state, email) {

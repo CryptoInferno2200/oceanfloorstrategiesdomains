@@ -5,12 +5,16 @@ import { GoogleGenAI } from "@google/genai";
 import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
 import { resolveAttachments, type AttachmentPart } from "../lib/attachments.mts";
-import { identityHash } from "../lib/uploads.mts";
+import { identityHash, requesterKey } from "../lib/uploads.mts";
 
 type ChatMessage = { role: "user" | "assistant"; content: string; parts?: AttachmentPart[] };
 
 const MAX_ATTACHMENTS_PER_MESSAGE = 10;
-const MAX_ATTACHMENTS_PER_REQUEST = 20;
+const MAX_ATTACHMENTS_PER_REQUEST = { member: 20, guest: 6 };
+// Synchronous functions stop at 60 seconds; leave room to answer, and give fallbacks a turn.
+const DEADLINE_MS = 52000;
+const FALLBACK_RESERVE_MS = 8000;
+const MIN_ATTEMPT_MS = 5000;
 
 const ROUTES = new Set(["auto.html", "name.html", "drop.html", "host.html", "live.html"]);
 
@@ -81,7 +85,7 @@ function geminiParts(message: ChatMessage) {
   return parts;
 }
 
-async function complete(provider: string, model: string, messages: ChatMessage[]) {
+async function complete(provider: string, model: string, messages: ChatMessage[], timeout: number) {
   if (provider === "anthropic") {
     const message = await new Anthropic().messages.create({
       model,
@@ -92,7 +96,7 @@ async function complete(provider: string, model: string, messages: ChatMessage[]
           ? { role: "user" as const, content: anthropicContent(message) }
           : { role: "assistant" as const, content: message.content },
       ),
-    });
+    }, { timeout, maxRetries: 0 });
     return message.content.map((block) => (block.type === "text" ? block.text : "")).join("");
   }
   if (provider === "openai") {
@@ -106,10 +110,10 @@ async function complete(provider: string, model: string, messages: ChatMessage[]
             : { role: "assistant", content: message.content },
         ),
       ],
-    });
+    }, { timeout, maxRetries: 0 });
     return completion.choices[0]?.message?.content || "";
   }
-  const response = await new GoogleGenAI({}).models.generateContent({
+  const response = await new GoogleGenAI({ httpOptions: { timeout } }).models.generateContent({
     model,
     contents: messages.map((message) => ({
       role: message.role === "assistant" ? "model" : "user",
@@ -137,6 +141,7 @@ function json(body: unknown, status = 200) {
 }
 
 export default async (req: Request, context: Context) => {
+  const started = Date.now();
   if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
   const length = Number(req.headers.get("content-length") || 0);
   if (length > 60000) return json({ error: "Request is too large." }, 413);
@@ -144,6 +149,7 @@ export default async (req: Request, context: Context) => {
   if (origin && origin !== new URL(req.url).origin) return json({ error: "Request origin is not allowed." }, 403);
 
   const user = await getUser();
+  const requester = await requesterKey(context);
   const identity = await identityHash(String(user?.email || context.ip || "unknown").trim().toLowerCase());
   const limit = user ? 60 : 20;
   const bucket = new Date();
@@ -183,13 +189,13 @@ export default async (req: Request, context: Context) => {
     return json({ error: "Ask a question or describe what you want to build." }, 400);
   }
   // Keep the newest attachments when a conversation carries more files than one request can include.
-  let attachmentRoom = MAX_ATTACHMENTS_PER_REQUEST;
+  let attachmentRoom = MAX_ATTACHMENTS_PER_REQUEST[requester.member ? "member" : "guest"];
   for (let index = attachmentIds.length - 1; index >= 0; index--) {
     attachmentIds[index] = attachmentIds[index].slice(0, Math.max(0, attachmentRoom));
     attachmentRoom -= attachmentIds[index].length;
   }
   if (attachmentIds.some((ids) => ids.length)) {
-    const resolved = await resolveAttachments(attachmentIds, identity);
+    const resolved = await resolveAttachments(attachmentIds, requester.owners, requester.member);
     resolved.forEach((parts, index) => {
       if (parts.length) messages[index].parts = parts;
     });
@@ -201,9 +207,12 @@ export default async (req: Request, context: Context) => {
   try {
     let raw = "";
     let used = "";
-    for (const { provider, model } of order) {
+    for (const [index, { provider, model }] of order.entries()) {
+      const remaining = started + DEADLINE_MS - Date.now();
+      const timeout = remaining - FALLBACK_RESERVE_MS * (order.length - 1 - index);
+      if (remaining < MIN_ATTEMPT_MS) break;
       try {
-        raw = await complete(provider, model, messages);
+        raw = await complete(provider, model, messages, Math.max(timeout, MIN_ATTEMPT_MS));
         if (raw.trim()) {
           used = model;
           break;

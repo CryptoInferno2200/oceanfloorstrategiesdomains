@@ -10,5 +10,5 @@
     } else {
       document.getElementById("host").textContent = n ? n + " · site preview" : "Site preview";
       document.getElementById("title").textContent = n || "No preview yet";
-      document.getElementById("desc").textContent = "No preview is saved on this device for this name. Create one on the Hosting preview page.";
+      document.getElementById("desc").textContent = "No preview is saved on this device for this name. Create one in the Claim name site preview step.";
     }

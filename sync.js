@@ -6,7 +6,7 @@
   const SOURCES = [
     { id: "seat", name: "Seat", blurb: "Seat cache on this device." },
     { id: "vault", name: "Vault", blurb: "Receipts cached on this device." },
-    { id: "host", name: "Host", blurb: "Hosting previews saved on this device." },
+    { id: "host", name: "Claim name previews", blurb: "Hosting previews saved on this device." },
     { id: "profile", name: "Profile", blurb: "Launch kit fields saved on this device." },
     { id: "receipt", name: "Receipt", blurb: "Last quote saved on this device." },
   ];

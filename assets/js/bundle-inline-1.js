@@ -7,8 +7,8 @@ const ORDER = ["claim", "one", "abyss-one"];
       art.innerHTML =
         "<div class='k'>" + (id === "claim" ? "Name only" : id === "one" ? "Most names" : "Studios") + "</div>" +
         "<h2>" + p.name + "</h2>" +
-        "<p class='price'>" + OFSPrice.money(p.year) + "<span class='k'> / year</span></p>" +
+        "<p class='price'>" + OFSPrice.money(OFSPrice.priceOf(p)) + "<span class='k'> / " + OFSPrice.cycleOf(p) + "</span></p>" +
         "<ul>" + (p.includes || []).map((x) => "<li>" + x + "</li>").join("") + "</ul>" +
-        "<a class='btn" + (id === "claim" || id === "one" ? "" : " ghost") + "' href='checkout.html?bundle=" + id + "&listing=both'>Checkout · " + OFSPrice.money(p.year) + "</a>";
+        "<a class='btn" + (id === "claim" || id === "one" ? "" : " ghost") + "' href='checkout.html?bundle=" + id + "&listing=both'>Checkout · " + OFSPrice.money(OFSPrice.priceOf(p)) + "</a>";
       box.appendChild(art);
     });

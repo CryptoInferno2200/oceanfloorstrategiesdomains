@@ -3,6 +3,7 @@ import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
 import { PLANS, firstChargeCents, surchargeCents, tldOf } from "../lib/pricing.mts";
 import { attemptRegistration, checkAvailability, queueRegistration } from "../lib/registrar.mts";
+import { isComplimentary, registrarUnreachable } from "../lib/complimentary.mts";
 
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
 
@@ -26,13 +27,14 @@ export default async (request: Request) => {
     LIMIT 1
   `;
   if (taken) return Response.json({ error: `${fqdn} is already claimed here. Try another name.` }, { status: 409 });
+  const user = await getUser();
+  const free = await isComplimentary(normalize(user?.email));
   // Nothing is charged for a name the registrar cannot sell at the listed price.
   const available = await checkAvailability(fqdn);
-  if (!available.ok) return Response.json({ error: available.error }, { status: available.status });
+  if (!available.ok && !(free && registrarUnreachable(available.status))) return Response.json({ error: available.error }, { status: available.status });
   const tld = tldOf(fqdn);
   const surcharge = surchargeCents(plan, tld);
   const amount = firstChargeCents(plan, tld);
-  const user = await getUser();
   const sauce = normalize(body.sauce);
   if (sauce) {
     // Sauce launches are always OFS One, owned by the signed-in seat, and publish once paid.
@@ -42,8 +44,7 @@ export default async (request: Request) => {
     if (launch.status === "published") return Response.json({ error: "This launch is already published." }, { status: 409 });
     const db = getDatabase();
     const email = normalize(user.email);
-    const [eligible] = await db.sql`SELECT email FROM identity_whitelist WHERE email = ${email}`;
-    if (eligible) {
+    if (free) {
       // Complimentary seats publish without Stripe.
       const purchasedAt = new Date();
       const renewsAt = new Date(purchasedAt);
@@ -66,11 +67,10 @@ export default async (request: Request) => {
     }
   }
   if (!sauce && user?.email) {
-    // Whitelisted seats never reach Stripe, even if the page priced them before it knew.
+    // Whitelisted seats and the operator never reach Stripe, even if the page priced them before it knew.
     const db = getDatabase();
     const email = normalize(user.email);
-    const [eligible] = await db.sql`SELECT email FROM identity_whitelist WHERE email = ${email}`;
-    if (eligible) {
+    if (free) {
       const id = `comp-${crypto.randomUUID()}`;
       const purchasedAt = new Date();
       const renewsAt = new Date(purchasedAt);

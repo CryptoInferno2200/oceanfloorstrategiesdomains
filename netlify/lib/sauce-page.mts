@@ -1,5 +1,5 @@
 // Renders a Sauce launch as one static HTML page. Shared by hosting and the GitHub export.
-const esc = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+export const esc = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
 // Hosted pages are static: no scripts, no forms, only same-site logos and https images.
 export const PAGE_HEADERS = {
   "Content-Type": "text/html; charset=utf-8",

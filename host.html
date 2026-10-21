@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#041016" />
-  <title>OFS Domains — Claim name · Site preview</title>
+  <title>OFS Domains — Claim name · Host your site</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -25,7 +25,9 @@
     .k { font-size:11px; letter-spacing:.16em; text-transform:uppercase; }
     .card { margin-top:16px; padding:16px; border-radius:16px; background:var(--card); box-shadow:0 0 0 1px var(--line); }
     label { display:block; font-size:12px; color:var(--muted); margin: 12px 0 6px; }
-    input, textarea { width:100%; border:0; border-radius:12px; padding:12px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
+    label.check { display:flex; gap:8px; align-items:center; font-size:14px; color:var(--fg); }
+    label.check input { width:auto; }
+    input, textarea, select { width:100%; border:0; border-radius:12px; padding:12px; background:#07161c; color:var(--fg); box-shadow:0 0 0 1px var(--line); font: inherit; }
     button, a.btn { display:inline-block; height:44px; line-height:44px; padding:0 16px; border:0; border-radius:12px; background:var(--fg); color:var(--bg); font-weight:600; text-decoration:none; cursor:pointer; font: inherit; }
     .list { list-style:none; margin:12px 0 0; padding:0; display:grid; gap:8px; }
     .list li { display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; padding:12px; border-radius:12px; box-shadow:0 0 0 1px var(--line); }
@@ -37,9 +39,9 @@
 <canvas id="ofs-reef" class="ofs-reef" aria-hidden="true"></canvas>
 
   <header>
-    <div class="k">Claim name · site preview step</div>
-    <h1>Preview a site for your name.</h1>
-    <p class="lead"><strong>Preview only.</strong> Publishing here saves a preview on this device only — nothing is served on the public internet and no DNS or certificate is set up. Real hosting comes with OFS One or Sauce, at <code>/s/&lt;slug&gt;</code> on ofsdomains.com or on your own name by pointing its DNS at the site.</p>
+    <div class="k">Claim name · host your site</div>
+    <h1>Put your business on your name.</h1>
+    <p class="lead">Pick a name you own here, add your business details, and publish. OFS hosts the site on its own servers with its own nameservers and a free HTTPS certificate — no outside host to set up. A name with no site yet shows a “coming soon” page.</p>
     <nav>
       <a href="home.html">Home</a>
       <a href="auto.html">Auto</a>
@@ -54,22 +56,32 @@
     </nav>
   </header>
   <main>
-    <form class="card" id="form">
+    <p class="card" id="status" role="status">Loading your names…</p>
+    <form class="card" id="form" hidden>
       <label for="fqdn">Name</label>
-      <input id="fqdn" required placeholder="yourname.com" autocomplete="off" />
-      <label for="businessName">Business</label>
-      <input id="businessName" required placeholder="Your business" />
-      <label for="description">What this site is</label>
-      <textarea id="description" required placeholder="What you do, in one breath."></textarea>
-      <button type="submit" style="margin-top:16px">Save preview on this device</button>
+      <select id="fqdn" required></select>
+      <label for="businessName">Business name</label>
+      <input id="businessName" required maxlength="120" placeholder="Your business" />
+      <label for="tagline">Headline</label>
+      <input id="tagline" maxlength="160" placeholder="What you do, in one line" />
+      <label for="description">About</label>
+      <textarea id="description" maxlength="2000" rows="5" placeholder="Services, hours, what makes you different."></textarea>
+      <label for="contactEmail">Contact email</label>
+      <input id="contactEmail" type="email" maxlength="254" placeholder="you@yourbusiness.com" />
+      <label for="phone">Phone</label>
+      <input id="phone" type="tel" maxlength="40" placeholder="Optional" />
+      <label for="location">Location</label>
+      <input id="location" maxlength="120" placeholder="Optional" />
+      <label class="check"><input id="published" type="checkbox" checked /> Show this site on the name</label>
+      <button type="submit" style="margin-top:16px">Publish site</button>
+      <p class="k" id="saved" role="status" aria-live="polite"></p>
     </form>
     <div class="card">
-      <div class="k">Previews on this device</div>
+      <div class="k">Your names</div>
       <ul class="list" id="list"></ul>
     </div>
   </main>
-  <script src="./host.js"></script>
-  <script src="./assets/js/host-inline-1.js"></script>
+  <script type="module" src="./assets/js/host-inline-1.js"></script>
   <script src="./mail.js"></script>
   <script src="./support.js"></script>
   <script src="./reef-bg.js"></script>

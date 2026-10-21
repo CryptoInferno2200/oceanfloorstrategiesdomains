@@ -1,3 +1,36 @@
+# One Caddy on ns1 does two jobs: HTTPS for the PowerDNS API, and the web edge that serves every customer name.
+{
+	# Certificates for customer names are fetched from Let's Encrypt on a name's first visit,
+	# and only for names the site says it hosts, so strangers cannot make this server request certificates.
+	on_demand_tls {
+		ask {$OFS_SITE}/api/hosting/allow
+	}
+}
+
 {$API_HOST} {
 	reverse_proxy pdns:8081
+}
+
+# Customer names. Each page comes from the site; the edge key proves the request came through here.
+https:// {
+	tls {
+		on_demand
+	}
+	@logo path /api/sauce-logo/*
+	handle @logo {
+		reverse_proxy {$OFS_SITE} {
+			header_up Host {upstream_hostport}
+		}
+	}
+	handle {
+		rewrite * /api/hosting/render?host={host}&path={path}
+		reverse_proxy {$OFS_SITE} {
+			header_up Host {upstream_hostport}
+			header_up X-OFS-Edge-Key {$OFS_EDGE_KEY}
+		}
+	}
+}
+
+http:// {
+	redir https://{host}{uri} 308
 }

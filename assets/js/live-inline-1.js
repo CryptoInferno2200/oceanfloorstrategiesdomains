@@ -65,7 +65,7 @@ function render(p) {
   list(rows);
   if (fqdn) {
     const site = $("toHost");
-    site.href = typeof OFSHost !== "undefined" ? OFSHost.path(fqdn) : "site.html?n=" + encodeURIComponent(fqdn);
+    site.href = "host.html?fqdn=" + encodeURIComponent(fqdn);
     site.hidden = false;
     const bind = $("toBind");
     bind.href = "bind.html?fqdn=" + encodeURIComponent(fqdn);

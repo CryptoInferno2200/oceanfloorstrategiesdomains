@@ -90,59 +90,36 @@ const q = new URLSearchParams(location.search);
       try {
         sessionStorage.setItem("ofs.receipt", JSON.stringify({ fqdn, quote, at: Date.now() }));
       } catch (_) {}
-      const p = new URLSearchParams({
-        fqdn,
-        listing: quote.listing,
-        bundle: quote.plan,
-        due: String(quote.due),
-        complimentary: quote.complimentary ? "1" : "0",
-      });
-      if (quote.due > 0) {
-        pay.disabled = true;
-        pay.setAttribute("aria-busy", "true");
-        pay.textContent = "Checking availability…";
-        try {
-          const response = await fetch("/api/create-checkout", {
-            method: "POST",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ fqdn, plan: quote.plan, listing: quote.listing }),
-          });
-          const result = await response.json().catch(() => ({}));
-          if (!response.ok || !result.url) {
-            const fallback = response.status === 409 ? fqdn + " is not available. Try another name."
-              : response.status === 400 ? "That name can't be registered here."
-              : response.status === 503 ? "Registration is temporarily unavailable. You have not been charged."
-              : "Checkout could not start. You have not been charged.";
-            throw new Error(result.error || fallback);
-          }
-          pay.textContent = "Opening secure checkout…";
-          location.href = result.url;
-        } catch (error) {
-          pay.disabled = false;
-          pay.removeAttribute("aria-busy");
-          pay.textContent = "Try secure checkout again";
-          say(String(error.message || error));
-          field.focus();
-        }
-        return;
-      }
+      // The server decides who pays: complimentary seats come back with their receipt, everyone else with Stripe.
       pay.disabled = true;
-      if (window.OFSHost) {
-        OFSHost.publish({ fqdn, businessName: fqdn, plan: quote.plan, listing: quote.listing, description: "Hosted after checkout." });
+      pay.setAttribute("aria-busy", "true");
+      pay.textContent = "Checking availability…";
+      try {
+        const response = await fetch("/api/create-checkout", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ fqdn, plan: quote.plan, listing: quote.listing }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.url) {
+          const fallback = response.status === 409 ? fqdn + " is not available. Try another name."
+            : response.status === 400 ? "That name can't be registered here."
+            : response.status === 503 ? "Registration is temporarily unavailable. You have not been charged."
+            : "Checkout could not start. You have not been charged.";
+          throw new Error(result.error || fallback);
+        }
+        if (quote.due === 0 && window.OFSHost) {
+          OFSHost.publish({ fqdn, businessName: fqdn, plan: quote.plan, listing: quote.listing, description: "Hosted after checkout." });
+        }
+        pay.textContent = quote.due === 0 ? "Opening your receipt…" : "Opening secure checkout…";
+        location.href = result.url;
+      } catch (error) {
+        pay.disabled = false;
+        pay.removeAttribute("aria-busy");
+        pay.textContent = "Try secure checkout again";
+        say(String(error.message || error));
+        field.focus();
       }
-      if (window.OFSPurchases) {
-        try {
-          await OFSPurchases.add({
-            fqdn,
-            plan: quote.plan,
-            listing: quote.listing,
-            due: quote.due,
-            complimentary: quote.complimentary,
-            status: quote.due === 0 ? "complimentary" : "paid",
-          });
-        } catch (_) {}
-      }
-      location.href = "live.html?" + p.toString();
     });
     paint();
     fetch("/api/entitlement", { headers: { Accept: "application/json" } })

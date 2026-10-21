@@ -3,6 +3,7 @@ import { getUser } from "@netlify/identity";
 import { getDatabase } from "@netlify/database";
 import { rejectCrossOrigin } from "../lib/http.mts";
 import { attemptRegistration, checkAvailability, queueRegistration } from "../lib/registrar.mts";
+import { isComplimentary, registrarUnreachable } from "../lib/complimentary.mts";
 
 const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
 const clean = (value: unknown, max = 160) => String(value || "").trim().slice(0, max);
@@ -43,8 +44,7 @@ export default async (request: Request) => {
     if (!PLANS.has(plan) || !label || !validDomain(fqdn) || !LISTINGS.has(listing)) {
       return Response.json({ error: "Purchase details are invalid." }, { status: 400 });
     }
-    const [eligible] = await db.sql`SELECT email FROM identity_whitelist WHERE email = ${email}`;
-    if (!eligible) return Response.json({ error: "Paid purchases are recorded only after payment confirmation." }, { status: 403 });
+    if (!(await isComplimentary(email))) return Response.json({ error: "Paid purchases are recorded only after payment confirmation." }, { status: 403 });
     const [owned] = await db.sql`
       SELECT id FROM purchase_history
       WHERE fqdn = ${fqdn} AND status IN ('paid', 'complimentary', 'pending')
@@ -52,7 +52,7 @@ export default async (request: Request) => {
     `;
     if (owned) return Response.json({ error: `${fqdn} is already claimed here.` }, { status: 409 });
     const available = await checkAvailability(fqdn);
-    if (!available.ok) return Response.json({ error: available.error }, { status: available.status });
+    if (!available.ok && !registrarUnreachable(available.status)) return Response.json({ error: available.error }, { status: available.status });
     const safePurchasedAt = new Date();
     const renewsAt = new Date(safePurchasedAt);
     renewsAt.setUTCFullYear(renewsAt.getUTCFullYear() + 1);

@@ -1,4 +1,4 @@
-const CACHE = "ofs-domains-v46";
+const CACHE = "ofs-domains-v47";
 const PRECACHE = [
   "./home.html",
   "./auto.html",
